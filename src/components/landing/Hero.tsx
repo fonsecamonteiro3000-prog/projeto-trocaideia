@@ -1,8 +1,17 @@
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Users, Shield, ArrowRight, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { MessageCircle, Users, Shield, ArrowRight, Sparkles, UserX } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Hero = () => {
+  const { signInAnonymously } = useAuth();
+  const navigate = useNavigate();
+
+  const handleAnonymous = () => {
+    signInAnonymously();
+    navigate("/chat");
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-hero-gradient">
       {/* Animated background */}
@@ -59,7 +68,7 @@ const Hero = () => {
           </p>
 
           {/* CTA */}
-          <div className="animate-fade-up-delay-3 flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div className="animate-fade-up-delay-3 flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
             <Link to="/register">
               <Button
                 size="lg"
@@ -80,6 +89,17 @@ const Hero = () => {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
+          </div>
+
+          {/* Anonymous CTA */}
+          <div className="animate-fade-up-delay-3 flex justify-center mb-16">
+            <button
+              onClick={handleAnonymous}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-medium transition-all duration-300 hover:scale-105 text-sm"
+            >
+              <UserX className="w-4 h-4" />
+              Entrar sem conta (anônimo)
+            </button>
           </div>
 
           {/* Stats */}

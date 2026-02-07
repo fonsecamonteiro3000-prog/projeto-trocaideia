@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWebRTC } from "@/hooks/useWebRTC";
+import { supabase } from "@/lib/supabase";
+import ReportModal from "@/components/chat/ReportModal";
+import GenderSelector from "@/components/chat/GenderSelector";
+import CountrySelector from "@/components/chat/CountrySelector";
+import ProfileModal from "@/components/chat/ProfileModal";
 import {
   Send,
   Loader2,
@@ -13,14 +18,16 @@ import {
   X,
   Play,
   Square,
-  Globe,
-  Smile,
+  Flag,
   User,
+  UserCircle,
+  MapPin,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const Chat = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAnonymous, profile, updateProfile, getUserId } = useAuth();
+  const currentUserId = getUserId();
   const {
     localStream,
     remoteStream,
@@ -34,12 +41,15 @@ const Chat = () => {
     sendMessage,
     messages,
     onlineCount,
-  } = useWebRTC(user?.id);
+  } = useWebRTC(currentUserId);
 
   const [input, setInput] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [country, setCountry] = useState(profile.country || "BR");
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -103,6 +113,29 @@ const Chat = () => {
     }
   };
 
+  const handleReport = async (category: string, detail: string) => {
+    try {
+      await supabase.from("reports").insert({
+        reporter_id: user?.id || null,
+        category,
+        reason: detail || category,
+      });
+    } catch (err) {
+      console.error("Error reporting:", err);
+    }
+    // End chat immediately
+    disconnect();
+  };
+
+  const handleGenderChange = (gender: "male" | "female" | "other") => {
+    updateProfile({ gender });
+  };
+
+  const handleCountryChange = (code: string) => {
+    setCountry(code);
+    updateProfile({ country: code });
+  };
+
   const getStatusText = () => {
     switch (status) {
       case "requesting-media":
@@ -134,6 +167,8 @@ const Chat = () => {
     }
   };
 
+  const displayName = profile.displayName || user?.email?.split("@")[0] || "Usuário";
+
   return (
     <div className="h-screen w-screen flex flex-col bg-[#1a1a2e] overflow-hidden">
       {/* ═══════════ TOP NAV BAR ═══════════ */}
@@ -143,12 +178,12 @@ const Chat = () => {
             <img src={logo} alt="TrocaIdeia" className="h-10 w-auto" />
           </a>
 
-          {/* Nav tabs like OmeTV */}
+          {/* Nav tabs */}
           <nav className="hidden lg:flex items-center gap-1">
             {[
               { label: "Chat vídeo", icon: <Video className="w-4 h-4" />, active: true },
               { label: "Mensagens", icon: <MessageSquare className="w-4 h-4" />, active: false },
-              { label: "Encontrar amigos", icon: <User className="w-4 h-4" />, active: false },
+              { label: "Encontrar amigos", icon: <MapPin className="w-4 h-4" />, active: false },
             ].map((tab) => (
               <button
                 key={tab.label}
@@ -172,7 +207,29 @@ const Chat = () => {
             <span className="hidden sm:inline">{onlineCount.toLocaleString()} online</span>
           </div>
 
-          <span className="text-sm text-gray-500 hidden md:block">{user?.email}</span>
+          {/* Profile button */}
+          <button
+            onClick={() => setShowProfile(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
+          >
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt=""
+                className="w-7 h-7 rounded-full object-cover border border-white/20"
+              />
+            ) : (
+              <UserCircle className="w-5 h-5 text-gray-400" />
+            )}
+            <span className="text-sm text-gray-300 hidden md:block max-w-[120px] truncate">
+              {displayName}
+            </span>
+            {isAnonymous && (
+              <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded-full font-medium hidden sm:inline">
+                Anônimo
+              </span>
+            )}
+          </button>
 
           <button
             onClick={signOut}
@@ -218,7 +275,15 @@ const Chat = () => {
 
               {/* Your name tag */}
               <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
-                <span className="text-white text-sm font-medium">Você</span>
+                {profile.avatarUrl && (
+                  <img src={profile.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                )}
+                <span className="text-white text-sm font-medium">{displayName}</span>
+                {profile.gender && (
+                  <span className="text-sm">
+                    {profile.gender === "male" ? "👦" : profile.gender === "female" ? "👧" : "🧑"}
+                  </span>
+                )}
               </div>
 
               {/* Camera/mic controls overlay */}
@@ -232,11 +297,7 @@ const Chat = () => {
                         : "bg-black/40 hover:bg-black/60 text-white"
                     }`}
                   >
-                    {isVideoOff ? (
-                      <VideoOff className="w-5 h-5" />
-                    ) : (
-                      <Video className="w-5 h-5" />
-                    )}
+                    {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
                   </button>
                   <button
                     onClick={toggleMute}
@@ -246,11 +307,7 @@ const Chat = () => {
                         : "bg-black/40 hover:bg-black/60 text-white"
                     }`}
                   >
-                    {isMuted ? (
-                      <MicOff className="w-5 h-5" />
-                    ) : (
-                      <Mic className="w-5 h-5" />
-                    )}
+                    {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                   </button>
                 </div>
               )}
@@ -277,7 +334,6 @@ const Chat = () => {
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0f0f23]">
                   {status === "searching" || status === "connecting" ? (
                     <>
-                      {/* Loading animation like OmeTV */}
                       <div className="relative mb-6">
                         <div className="flex gap-2">
                           {[0, 1, 2, 3, 4].map((i) => (
@@ -293,22 +349,16 @@ const Chat = () => {
                         </div>
                       </div>
                       <p className="text-white text-lg font-medium">
-                        {status === "searching"
-                          ? "Procurando alguém..."
-                          : "Conectando..."}
+                        {status === "searching" ? "Procurando alguém..." : "Conectando..."}
                       </p>
-                      <p className="text-gray-400 text-sm mt-2">
-                        Aguarde um momento
-                      </p>
+                      <p className="text-gray-400 text-sm mt-2">Aguarde um momento</p>
                     </>
                   ) : status === "disconnected" ? (
                     <>
                       <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
                         <User className="w-10 h-10 text-red-400" />
                       </div>
-                      <p className="text-white text-lg font-medium">
-                        Estranho desconectou
-                      </p>
+                      <p className="text-white text-lg font-medium">Estranho desconectou</p>
                       <p className="text-gray-400 text-sm mt-2">
                         Clique em "Iniciar" para encontrar outra pessoa
                       </p>
@@ -318,9 +368,7 @@ const Chat = () => {
                       <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4">
                         <User className="w-10 h-10 text-gray-500" />
                       </div>
-                      <p className="text-white text-lg font-medium">
-                        Ninguém conectado
-                      </p>
+                      <p className="text-white text-lg font-medium">Ninguém conectado</p>
                       <p className="text-gray-400 text-sm mt-2">
                         Clique em "Iniciar" para começar
                       </p>
@@ -329,13 +377,20 @@ const Chat = () => {
                 </div>
               )}
 
-              {/* Stranger name tag */}
+              {/* Stranger name tag + report button */}
               {status === "connected" && (
-                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
-                  <span className="text-white text-sm font-medium">
-                    Estranho
-                  </span>
-                </div>
+                <>
+                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
+                    <span className="text-white text-sm font-medium">Estranho</span>
+                  </div>
+                  <button
+                    onClick={() => setShowReport(true)}
+                    className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 transition-colors text-sm font-medium"
+                  >
+                    <Flag className="w-4 h-4" />
+                    Denunciar
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -375,14 +430,8 @@ const Chat = () => {
 
               {/* PARAR button */}
               <button
-                onClick={() => {
-                  if (status === "searching" || status === "connecting") {
-                    disconnect();
-                  } else if (status === "connected") {
-                    disconnect();
-                  }
-                }}
-                disabled={status === "idle" && !localStream}
+                onClick={disconnect}
+                disabled={status === "idle"}
                 className={`flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 min-w-[140px] ${
                   status === "idle"
                     ? "bg-gray-700 text-gray-400 cursor-not-allowed"
@@ -393,17 +442,11 @@ const Chat = () => {
                 Parar
               </button>
 
-              {/* PAÍS button */}
-              <button className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold text-lg bg-white/10 hover:bg-white/20 text-white transition-all transform hover:scale-105 active:scale-95 min-w-[120px]">
-                <Globe className="w-5 h-5" />
-                País 🇧🇷
-              </button>
+              {/* PAÍS selector */}
+              <CountrySelector value={country} onChange={handleCountryChange} />
 
-              {/* EU SOU button */}
-              <button className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold text-lg bg-white/10 hover:bg-white/20 text-white transition-all transform hover:scale-105 active:scale-95 min-w-[120px]">
-                <Smile className="w-5 h-5" />
-                Eu sou 🧑
-              </button>
+              {/* EU SOU selector */}
+              <GenderSelector value={profile.gender} onChange={handleGenderChange} />
 
               {/* Toggle chat button (mobile) */}
               <button
@@ -466,12 +509,24 @@ const Chat = () => {
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
               )}
             </div>
-            <button
-              onClick={() => setIsChatOpen(false)}
-              className="lg:hidden text-gray-400 hover:text-white p-1"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Report button in chat header too */}
+              {status === "connected" && (
+                <button
+                  onClick={() => setShowReport(true)}
+                  className="text-red-400/60 hover:text-red-400 p-1 transition-colors"
+                  title="Denunciar"
+                >
+                  <Flag className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="lg:hidden text-gray-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Messages area */}
@@ -479,9 +534,7 @@ const Chat = () => {
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <MessageSquare className="w-12 h-12 text-gray-600 mb-3" />
-                <p className="text-gray-500 text-sm">
-                  As mensagens aparecerão aqui
-                </p>
+                <p className="text-gray-500 text-sm">As mensagens aparecerão aqui</p>
               </div>
             )}
 
@@ -497,21 +550,27 @@ const Chat = () => {
                 }`}
               >
                 {msg.sender === "system" ? (
-                  <div className="bg-white/5 rounded-lg px-3 py-1.5">
+                  <div className="bg-white/5 rounded-lg px-3 py-1.5 max-w-[90%]">
                     <p className="text-xs text-gray-400 italic">{msg.text}</p>
                   </div>
                 ) : (
                   <div
-                    className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm ${
+                    className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
                       msg.sender === "you"
                         ? "bg-green-500 text-white rounded-br-md"
                         : "bg-white/15 text-white rounded-bl-md"
                     }`}
                   >
-                    <p className="text-xs font-semibold mb-0.5 opacity-70">
-                      {msg.sender === "you" ? "Você" : "Estranho"}
+                    <p className="text-[10px] font-bold mb-0.5 opacity-60 uppercase tracking-wide">
+                      {msg.sender === "you" ? displayName : "Estranho"}
                     </p>
-                    {msg.text}
+                    <p className="break-words">{msg.text}</p>
+                    <p className="text-[10px] opacity-40 mt-1 text-right">
+                      {msg.timestamp.toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
                   </div>
                 )}
               </div>
@@ -546,6 +605,19 @@ const Chat = () => {
           </div>
         </div>
       </div>
+
+      {/* ═══════════ MODALS ═══════════ */}
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        onReport={handleReport}
+      />
+      <ProfileModal
+        isOpen={showProfile}
+        onClose={() => setShowProfile(false)}
+        profile={profile}
+        onSave={updateProfile}
+      />
     </div>
   );
 };

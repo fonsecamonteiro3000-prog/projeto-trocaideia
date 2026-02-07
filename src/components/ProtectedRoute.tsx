@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAnonymous } = useAuth();
 
   if (loading) {
     return (
@@ -20,7 +20,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user) {
+  // Allow both authenticated users and anonymous users
+  if (!user && !isAnonymous) {
     return <Navigate to="/login" replace />;
   }
 

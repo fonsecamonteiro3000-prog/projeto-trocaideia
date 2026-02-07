@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageCircle, Mail, Lock, Chrome } from "lucide-react";
+import { MessageCircle, Mail, Lock, Chrome, UserX } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const Login = () => {
@@ -12,7 +12,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signInWithEmail, signInWithGoogle } = useAuth();
+  const { signInWithEmail, signInWithGoogle, signInAnonymously } = useAuth();
   const navigate = useNavigate();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -57,10 +57,23 @@ const Login = () => {
           <Button
             onClick={handleGoogleLogin}
             variant="outline"
-            className="w-full bg-white hover:bg-white/90 text-gray-900 font-semibold py-6 text-base border-0 mb-6"
+            className="w-full bg-white hover:bg-white/90 text-gray-900 font-semibold py-6 text-base border-0 mb-3"
           >
             <Chrome className="mr-2 h-5 w-5" />
             Continuar com Google
+          </Button>
+
+          {/* Anonymous Entry */}
+          <Button
+            onClick={() => {
+              signInAnonymously();
+              navigate("/chat");
+            }}
+            variant="outline"
+            className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-6 text-base border border-white/20 mb-6"
+          >
+            <UserX className="mr-2 h-5 w-5" />
+            Entrar como Anônimo
           </Button>
 
           {/* Divider */}
