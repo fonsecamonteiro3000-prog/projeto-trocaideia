@@ -29,6 +29,7 @@ import {
   Users,
   RefreshCw,
   Filter,
+  ArrowLeft,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
@@ -53,7 +54,7 @@ const Chat = () => {
   } = useWebRTC(currentUserId);
 
   const [input, setInput] = useState("");
-  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(window.innerWidth >= 1024);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -691,36 +692,51 @@ const Chat = () => {
 
           {/* ─── CHAT SIDEBAR ─── */}
           {isChatOpen && (
-            <div
-              className="fixed inset-0 z-40 lg:relative lg:inset-auto lg:z-auto flex flex-col w-full lg:w-[300px] bg-white dark:bg-[#1a1a1a] border-l border-gray-200 dark:border-white/10 flex-shrink-0"
-            >
-              {/* Chat header */}
-              <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200 dark:border-white/10">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-green-500" />
-                  <h3 className="text-gray-900 dark:text-white font-semibold text-sm sm:text-base">Chat</h3>
-                  {status === "connected" && (
-                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {status === "connected" && (
+            <>
+              {/* Backdrop escuro no mobile */}
+              <div
+                className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+                onClick={() => setIsChatOpen(false)}
+              />
+              <div
+                className="fixed inset-y-0 right-0 z-50 lg:relative lg:inset-auto lg:z-auto flex flex-col w-[85%] max-w-[360px] lg:w-[300px] lg:max-w-none bg-white dark:bg-[#1a1a1a] border-l border-gray-200 dark:border-white/10 flex-shrink-0 shadow-2xl lg:shadow-none"
+              >
+                {/* Chat header */}
+                <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    {/* Botão voltar no mobile */}
                     <button
-                      onClick={() => setShowReport(true)}
-                      className="text-red-400/60 hover:text-red-500 p-1 transition-colors"
-                      title="Denunciar"
+                      onClick={() => setIsChatOpen(false)}
+                      className="lg:hidden flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors mr-1"
+                      title="Fechar chat"
                     >
-                      <Flag className="w-4 h-4" />
+                      <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                     </button>
-                  )}
-                  <button
-                    onClick={() => setIsChatOpen(false)}
-                    className="text-gray-400 hover:text-gray-700 dark:hover:text-white p-1"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                    <MessageSquare className="w-5 h-5 text-green-500" />
+                    <h3 className="text-gray-900 dark:text-white font-semibold text-sm sm:text-base">Chat</h3>
+                    {status === "connected" && (
+                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {status === "connected" && (
+                      <button
+                        onClick={() => setShowReport(true)}
+                        className="text-red-400/60 hover:text-red-500 p-1 transition-colors"
+                        title="Denunciar"
+                      >
+                        <Flag className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setIsChatOpen(false)}
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                      title="Fechar chat"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
 
             {/* Messages area */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
@@ -797,6 +813,7 @@ const Chat = () => {
               </div>
             </div>
           </div>
+            </>
           )}
         </div>
       )}
