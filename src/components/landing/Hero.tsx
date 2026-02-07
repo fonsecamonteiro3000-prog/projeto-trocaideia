@@ -41,7 +41,7 @@ const Hero = () => {
       </div>
 
       {/* Content */}
-      <div className="container relative z-10 px-4 pt-28 pb-20">
+      <div className="container relative z-10 px-4 pt-20 sm:pt-28 pb-12 sm:pb-20">
         <div className="max-w-5xl mx-auto">
           {/* Top badge */}
           <div className="animate-fade-up flex justify-center mb-8">
@@ -53,7 +53,7 @@ const Hero = () => {
           </div>
 
           {/* Headline */}
-          <h1 className="animate-fade-up-delay-1 text-center text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold leading-[1.05] tracking-tight mb-6">
+          <h1 className="animate-fade-up-delay-1 text-center text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold leading-[1.05] tracking-tight mb-4 sm:mb-6">
             <span className="text-gray-900 dark:text-white">Converse </span>
             <span className="bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 bg-clip-text text-transparent">ao vivo</span>
             <br />
@@ -62,7 +62,7 @@ const Hero = () => {
           </h1>
 
           {/* Subheadline */}
-          <p className="animate-fade-up-delay-2 text-center text-lg sm:text-xl md:text-2xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+          <p className="animate-fade-up-delay-2 text-center text-sm sm:text-lg md:text-xl lg:text-2xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-8 sm:mb-12 leading-relaxed">
             Videochat aleatório, seguro e gratuito. Conecte-se com pessoas do Brasil e do mundo inteiro — agora mesmo.
           </p>
 
@@ -71,7 +71,7 @@ const Hero = () => {
             <Button
               size="lg"
               onClick={handleAnonymous}
-              className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-12 py-7 text-lg shadow-lg shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 rounded-2xl"
+              className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-8 sm:px-12 py-4 sm:py-7 text-base sm:text-lg shadow-lg shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 rounded-2xl"
             >
               <Video className="mr-2 h-5 w-5" />
               Quero conversar
@@ -81,7 +81,7 @@ const Hero = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full sm:w-auto border-2 border-green-200 dark:border-green-500/30 bg-white/80 dark:bg-white/5 backdrop-blur-sm hover:bg-green-50 dark:hover:bg-green-500/10 text-green-700 dark:text-green-400 font-semibold px-10 py-7 text-lg transition-all duration-300 hover:scale-105 rounded-2xl"
+                className="w-full sm:w-auto border-2 border-green-200 dark:border-green-500/30 bg-white/80 dark:bg-white/5 backdrop-blur-sm hover:bg-green-50 dark:hover:bg-green-500/10 text-green-700 dark:text-green-400 font-semibold px-8 sm:px-10 py-4 sm:py-7 text-base sm:text-lg transition-all duration-300 hover:scale-105 rounded-2xl"
               >
                 Criar conta grátis
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -118,26 +118,26 @@ const Hero = () => {
 
           {/* Stats */}
           <div className="animate-fade-up-delay-3 grid grid-cols-3 gap-4 max-w-lg mx-auto">
-            <div className="text-center p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 shadow-sm">
-              <div className="flex items-center justify-center mb-2">
-                <Users className="w-5 h-5 text-green-500" />
+            <div className="text-center p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 shadow-sm">
+              <div className="flex items-center justify-center mb-1 sm:mb-2">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
               </div>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">10K+</p>
-              <p className="text-xs md:text-sm text-gray-400 dark:text-gray-500 mt-1">Usuários ativos</p>
+              <p className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">10K+</p>
+              <p className="text-[10px] sm:text-xs md:text-sm text-gray-400 dark:text-gray-500 mt-0.5 sm:mt-1">Usuários ativos</p>
             </div>
             <div className="text-center p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 shadow-sm">
               <div className="flex items-center justify-center mb-2">
                 <Video className="w-5 h-5 text-green-500" />
               </div>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">50K+</p>
-              <p className="text-xs md:text-sm text-gray-400 dark:text-gray-500 mt-1">Videochats/dia</p>
+              <p className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">50K+</p>
+              <p className="text-[10px] sm:text-xs md:text-sm text-gray-400 dark:text-gray-500 mt-0.5 sm:mt-1">Videochats/dia</p>
             </div>
-            <div className="text-center p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 shadow-sm">
-              <div className="flex items-center justify-center mb-2">
-                <Shield className="w-5 h-5 text-green-500" />
+            <div className="text-center p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 shadow-sm">
+              <div className="flex items-center justify-center mb-1 sm:mb-2">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
               </div>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">99%</p>
-              <p className="text-xs md:text-sm text-gray-400 dark:text-gray-500 mt-1">Segurança</p>
+              <p className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">99%</p>
+              <p className="text-[10px] sm:text-xs md:text-sm text-gray-400 dark:text-gray-500 mt-0.5 sm:mt-1">Segurança</p>
             </div>
           </div>
         </div>

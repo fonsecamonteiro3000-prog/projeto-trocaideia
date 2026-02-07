@@ -225,10 +225,10 @@ const Chat = () => {
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-50 dark:bg-[#111] overflow-hidden">
       {/* ═══════════ TOP NAV BAR ═══════════ */}
-      <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-white/10 px-4 py-2 flex items-center justify-between z-50 flex-shrink-0">
-        <div className="flex items-center gap-4">
+      <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-white/10 px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between z-50 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-4">
           <a href="/" className="flex items-center gap-2">
-            <img src={logo} alt="TrocaIdeia" className="h-14 w-auto" />
+            <img src={logo} alt="TrocaIdeia" className="h-9 sm:h-14 w-auto" />
           </a>
 
           {/* Nav tabs */}
@@ -254,9 +254,9 @@ const Chat = () => {
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Online counter */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             <span className="hidden sm:inline">{onlineCount.toLocaleString()} online</span>
           </div>
@@ -266,13 +266,13 @@ const Chat = () => {
           {/* Profile button */}
           <button
             onClick={() => setShowProfile(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
           >
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
                 alt=""
-                className="w-7 h-7 rounded-full object-cover border border-gray-200 dark:border-white/20"
+                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover border border-gray-200 dark:border-white/20"
               />
             ) : (
               <UserCircle className="w-5 h-5 text-gray-400" />
@@ -289,7 +289,7 @@ const Chat = () => {
 
           <button
             onClick={signOut}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-sm"
+            className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-sm"
           >
             <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline">Sair</span>
@@ -301,13 +301,13 @@ const Chat = () => {
       <div className="lg:hidden flex items-center border-b border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a]">
         {([
           { key: "video" as ChatTab, label: "Vídeo", icon: <Video className="w-4 h-4" /> },
-          { key: "mensagens" as ChatTab, label: "Mensagens", icon: <MessageSquare className="w-4 h-4" /> },
+          { key: "mensagens" as ChatTab, label: "Msgs", icon: <MessageSquare className="w-4 h-4" /> },
           { key: "encontrar" as ChatTab, label: "Encontrar", icon: <Users className="w-4 h-4" /> },
         ]).map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors border-b-2 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs sm:text-sm font-medium transition-colors border-b-2 ${
               activeTab === tab.key
                 ? "border-green-500 text-green-600 dark:text-green-400"
                 : "border-transparent text-gray-400 hover:text-gray-700 dark:hover:text-white"
@@ -324,82 +324,10 @@ const Chat = () => {
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* ─── VIDEO AREA ─── */}
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-            {/* Video panels */}
-            <div className="flex-1 flex flex-col md:flex-row gap-0 relative">
-              {/* YOUR CAMERA (left/top) */}
-              <div className="flex-1 relative bg-gray-100 dark:bg-[#0a0a0a] border-r border-gray-200 dark:border-white/5">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-
-                {!localStream && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-[#0a0a0a]">
-                    <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-800/50 flex items-center justify-center mb-4">
-                      <VideoOff className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-                    </div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Câmera desligada</p>
-                    <button
-                      onClick={startCamera}
-                      className="mt-4 px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
-                    >
-                      Ligar Câmera
-                    </button>
-                  </div>
-                )}
-
-                {/* Your name tag */}
-                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
-                  {profile.avatarUrl && (
-                    <img src={profile.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
-                  )}
-                  <span className="text-white text-sm font-medium">{displayName}</span>
-                  {profile.gender && (
-                    <span className="text-sm">
-                      {profile.gender === "male" ? "👦" : profile.gender === "female" ? "👧" : "🧑"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Camera/mic controls overlay */}
-                {localStream && (
-                  <div className="absolute top-3 right-3 flex gap-2">
-                    <button
-                      onClick={toggleVideo}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                        isVideoOff
-                          ? "bg-red-500/80 hover:bg-red-500 text-white"
-                          : "bg-black/40 hover:bg-black/60 text-white"
-                      }`}
-                    >
-                      {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-                    </button>
-                    <button
-                      onClick={toggleMute}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                        isMuted
-                          ? "bg-red-500/80 hover:bg-red-500 text-white"
-                          : "bg-black/40 hover:bg-black/60 text-white"
-                      }`}
-                    >
-                      {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                    </button>
-                  </div>
-                )}
-
-                {/* Error message */}
-                {error && (
-                  <div className="absolute top-3 left-3 right-16 bg-red-500/90 backdrop-blur-sm rounded-lg px-4 py-2">
-                    <p className="text-white text-sm">{error}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* STRANGER'S CAMERA (right/bottom) */}
-              <div className="flex-1 relative bg-gray-100 dark:bg-[#0a0a0a]">
+            {/* Video panels — mobile: PiP layout, desktop: side by side */}
+            <div className="flex-1 relative bg-gray-100 dark:bg-[#0a0a0a]">
+              {/* STRANGER'S CAMERA (fullscreen on mobile, right half on desktop) */}
+              <div className="absolute inset-0 md:relative md:h-full md:flex-1">
                 <video
                   ref={remoteVideoRef}
                   autoPlay
@@ -411,12 +339,12 @@ const Chat = () => {
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-[#0a0a0a]">
                     {status === "searching" || status === "connecting" ? (
                       <>
-                        <div className="relative mb-6">
-                          <div className="flex gap-2">
+                        <div className="relative mb-4 sm:mb-6">
+                          <div className="flex gap-1.5 sm:gap-2">
                             {[0, 1, 2, 3, 4].map((i) => (
                               <div
                                 key={i}
-                                className="w-4 h-4 bg-green-500/60 rounded-full animate-bounce"
+                                className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500/60 rounded-full animate-bounce"
                                 style={{
                                   animationDelay: `${i * 0.15}s`,
                                   animationDuration: "1s",
@@ -425,29 +353,29 @@ const Chat = () => {
                             ))}
                           </div>
                         </div>
-                        <p className="text-gray-800 dark:text-white text-lg font-medium">
+                        <p className="text-gray-800 dark:text-white text-base sm:text-lg font-medium">
                           {status === "searching" ? "Procurando alguém..." : "Conectando..."}
                         </p>
-                        <p className="text-gray-400 text-sm mt-2">Aguarde um momento</p>
+                        <p className="text-gray-400 text-xs sm:text-sm mt-1.5">Aguarde um momento</p>
                       </>
                     ) : status === "disconnected" ? (
                       <>
-                        <div className="w-20 h-20 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-4">
-                          <User className="w-10 h-10 text-red-400" />
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-3 sm:mb-4">
+                          <User className="w-7 h-7 sm:w-10 sm:h-10 text-red-400" />
                         </div>
-                        <p className="text-gray-800 dark:text-white text-lg font-medium">Estranho desconectou</p>
-                        <p className="text-gray-400 text-sm mt-2">
-                          Clique em "Iniciar" para encontrar outra pessoa
+                        <p className="text-gray-800 dark:text-white text-base sm:text-lg font-medium">Estranho desconectou</p>
+                        <p className="text-gray-400 text-xs sm:text-sm mt-1.5">
+                          Procurando outra pessoa...
                         </p>
                       </>
                     ) : (
                       <>
-                        <div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-white/5 flex items-center justify-center mb-4">
-                          <User className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-gray-200 dark:bg-white/5 flex items-center justify-center mb-3 sm:mb-4">
+                          <User className="w-7 h-7 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500" />
                         </div>
-                        <p className="text-gray-800 dark:text-white text-lg font-medium">Ninguém conectado</p>
-                        <p className="text-gray-400 text-sm mt-2">
-                          Clique em "Iniciar" para começar
+                        <p className="text-gray-800 dark:text-white text-base sm:text-lg font-medium">Ninguém conectado</p>
+                        <p className="text-gray-400 text-xs sm:text-sm mt-1.5">
+                          Toque em "Iniciar" para começar
                         </p>
                       </>
                     )}
@@ -456,24 +384,216 @@ const Chat = () => {
 
                 {status === "connected" && (
                   <>
-                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
-                      <span className="text-white text-sm font-medium">Estranho</span>
+                    <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 flex items-center gap-1.5">
+                      <span className="text-white text-xs sm:text-sm font-medium">Estranho</span>
                     </div>
                     <button
                       onClick={() => setShowReport(true)}
-                      className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-500 hover:text-red-400 transition-colors text-sm font-medium"
+                      className="absolute top-2 right-2 sm:top-3 sm:right-3 flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-500 hover:text-red-400 transition-colors text-xs sm:text-sm font-medium"
                     >
-                      <Flag className="w-4 h-4" />
-                      Denunciar
+                      <Flag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Denunciar</span>
                     </button>
                   </>
                 )}
               </div>
+
+              {/* Desktop: side-by-side layout wrapper */}
+              <div className="hidden md:flex md:flex-row md:absolute md:inset-0">
+                {/* YOUR CAMERA — desktop left half */}
+                <div className="flex-1 relative bg-gray-100 dark:bg-[#0a0a0a] border-r border-gray-200 dark:border-white/5">
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+
+                  {!localStream && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-[#0a0a0a]">
+                      <div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-800/50 flex items-center justify-center mb-4">
+                        <VideoOff className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+                      </div>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">Câmera desligada</p>
+                      <button
+                        onClick={startCamera}
+                        className="mt-4 px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
+                      >
+                        Ligar Câmera
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Your name tag */}
+                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
+                    {profile.avatarUrl && (
+                      <img src={profile.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                    )}
+                    <span className="text-white text-sm font-medium">{displayName}</span>
+                    {profile.gender && (
+                      <span className="text-sm">
+                        {profile.gender === "male" ? "👦" : profile.gender === "female" ? "👧" : "🧑"}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Camera/mic controls overlay */}
+                  {localStream && (
+                    <div className="absolute top-3 right-3 flex gap-2">
+                      <button
+                        onClick={toggleVideo}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                          isVideoOff
+                            ? "bg-red-500/80 hover:bg-red-500 text-white"
+                            : "bg-black/40 hover:bg-black/60 text-white"
+                        }`}
+                      >
+                        {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+                      </button>
+                      <button
+                        onClick={toggleMute}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                          isMuted
+                            ? "bg-red-500/80 hover:bg-red-500 text-white"
+                            : "bg-black/40 hover:bg-black/60 text-white"
+                        }`}
+                      >
+                        {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* STRANGER — desktop right half */}
+                <div className="flex-1 relative bg-gray-100 dark:bg-[#0a0a0a]">
+                  <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+
+                  {status !== "connected" && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-[#0a0a0a]">
+                      {status === "searching" || status === "connecting" ? (
+                        <>
+                          <div className="relative mb-6">
+                            <div className="flex gap-2">
+                              {[0, 1, 2, 3, 4].map((i) => (
+                                <div
+                                  key={i}
+                                  className="w-4 h-4 bg-green-500/60 rounded-full animate-bounce"
+                                  style={{
+                                    animationDelay: `${i * 0.15}s`,
+                                    animationDuration: "1s",
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-gray-800 dark:text-white text-lg font-medium">
+                            {status === "searching" ? "Procurando alguém..." : "Conectando..."}
+                          </p>
+                          <p className="text-gray-400 text-sm mt-2">Aguarde um momento</p>
+                        </>
+                      ) : status === "disconnected" ? (
+                        <>
+                          <div className="w-20 h-20 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-4">
+                            <User className="w-10 h-10 text-red-400" />
+                          </div>
+                          <p className="text-gray-800 dark:text-white text-lg font-medium">Estranho desconectou</p>
+                          <p className="text-gray-400 text-sm mt-2">
+                            Procurando outra pessoa...
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-white/5 flex items-center justify-center mb-4">
+                            <User className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+                          </div>
+                          <p className="text-gray-800 dark:text-white text-lg font-medium">Ninguém conectado</p>
+                          <p className="text-gray-400 text-sm mt-2">
+                            Clique em "Iniciar" para começar
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {status === "connected" && (
+                    <>
+                      <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
+                        <span className="text-white text-sm font-medium">Estranho</span>
+                      </div>
+                      <button
+                        onClick={() => setShowReport(true)}
+                        className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-500 hover:text-red-400 transition-colors text-sm font-medium"
+                      >
+                        <Flag className="w-4 h-4" />
+                        Denunciar
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* YOUR CAMERA — mobile PiP overlay (small corner) */}
+              <div className="md:hidden absolute top-2 right-2 w-[110px] h-[150px] sm:w-[130px] sm:h-[175px] rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 dark:border-white/10 z-20">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+
+                {!localStream && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-200 dark:bg-[#1a1a1a]">
+                    <VideoOff className="w-6 h-6 text-gray-400" />
+                    <button
+                      onClick={startCamera}
+                      className="mt-1 text-[10px] text-green-500 font-medium"
+                    >
+                      Ligar
+                    </button>
+                  </div>
+                )}
+
+                {/* Mini controls on PiP */}
+                {localStream && (
+                  <div className="absolute bottom-1 left-1 right-1 flex justify-center gap-1">
+                    <button
+                      onClick={toggleVideo}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                        isVideoOff ? "bg-red-500/80 text-white" : "bg-black/50 text-white"
+                      }`}
+                    >
+                      {isVideoOff ? <VideoOff className="w-3.5 h-3.5" /> : <Video className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={toggleMute}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                        isMuted ? "bg-red-500/80 text-white" : "bg-black/50 text-white"
+                      }`}
+                    >
+                      {isMuted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Error message */}
+              {error && (
+                <div className="absolute top-2 left-2 right-[130px] sm:right-[150px] md:right-16 md:left-3 md:top-3 bg-red-500/90 backdrop-blur-sm rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 z-30">
+                  <p className="text-white text-xs sm:text-sm">{error}</p>
+                </div>
+              )}
             </div>
 
             {/* ─── BOTTOM CONTROLS ─── */}
-            <div className="bg-white dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-white/10 px-4 py-3 flex-shrink-0">
-              <div className="flex items-center justify-center gap-3 flex-wrap">
+            <div className="bg-white dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-white/10 px-2 sm:px-4 py-2 sm:py-3 flex-shrink-0">
+              <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
                 {/* INICIAR button */}
                 <button
                   onClick={() => {
@@ -484,7 +604,7 @@ const Chat = () => {
                     }
                   }}
                   disabled={!localStream || status === "requesting-media"}
-                  className={`flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 min-w-[140px] ${
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2 px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg transition-all transform hover:scale-105 active:scale-95 min-w-[100px] sm:min-w-[140px] ${
                     !localStream
                       ? "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
                       : status === "connected"
@@ -493,9 +613,9 @@ const Chat = () => {
                   }`}
                 >
                   {status === "searching" || status === "connecting" ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                   ) : (
-                    <Play className="w-5 h-5" />
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                   )}
                   {status === "connected"
                     ? "Próximo"
@@ -508,13 +628,13 @@ const Chat = () => {
                 <button
                   onClick={disconnect}
                   disabled={status === "idle"}
-                  className={`flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 min-w-[140px] ${
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2 px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg transition-all transform hover:scale-105 active:scale-95 min-w-[100px] sm:min-w-[140px] ${
                     status === "idle"
                       ? "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
                       : "bg-red-100 dark:bg-red-500/20 hover:bg-red-200 dark:hover:bg-red-500/30 text-red-600 dark:text-red-400 shadow-lg"
                   }`}
                 >
-                  <Square className="w-5 h-5" />
+                  <Square className="w-4 h-4 sm:w-5 sm:h-5" />
                   Parar
                 </button>
 
@@ -527,15 +647,15 @@ const Chat = () => {
                 {/* Toggle chat button (mobile) */}
                 <button
                   onClick={() => setIsChatOpen(!isChatOpen)}
-                  className="lg:hidden flex items-center justify-center gap-2 px-4 py-4 rounded-2xl font-bold text-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-white transition-all"
+                  className="lg:hidden flex items-center justify-center gap-1.5 px-3 sm:px-4 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-white transition-all"
                 >
-                  <MessageSquare className="w-5 h-5" />
+                  <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
 
               {/* Status text */}
-              <div className="flex items-center justify-center mt-2 gap-2">
-                <span className={`text-sm font-medium ${getStatusColor()}`}>
+              <div className="flex items-center justify-center mt-1.5 sm:mt-2 gap-2">
+                <span className={`text-xs sm:text-sm font-medium ${getStatusColor()}`}>
                   {status === "searching" || status === "connecting" ? (
                     <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
                   ) : (
@@ -553,8 +673,8 @@ const Chat = () => {
                 </span>
               </div>
 
-              {/* Rules notice */}
-              <div className="flex items-center justify-center mt-2">
+              {/* Rules notice — hidden on small mobile */}
+              <div className="hidden sm:flex items-center justify-center mt-2">
                 <div className="flex items-center gap-2 bg-gray-50 dark:bg-white/5 rounded-lg px-4 py-2 max-w-xl">
                   <img src={logo} alt="" className="w-6 h-6 rounded" />
                   <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -562,8 +682,7 @@ const Chat = () => {
                     <a href="#" className="text-green-600 dark:text-green-400 hover:underline">
                       regras
                     </a>
-                    . Os infratores das regras serão banidos. Por favor, mantenha
-                    seu rosto visível no quadro da câmera.
+                    . Os infratores das regras serão banidos.
                   </p>
                 </div>
               </div>
@@ -571,38 +690,37 @@ const Chat = () => {
           </div>
 
           {/* ─── CHAT SIDEBAR ─── */}
-          <div
-            className={`${
-              isChatOpen ? "flex" : "hidden"
-            } lg:flex flex-col w-full lg:w-[300px] bg-white dark:bg-[#1a1a1a] border-l border-gray-200 dark:border-white/10 flex-shrink-0`}
-          >
-            {/* Chat header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-green-500" />
-                <h3 className="text-gray-900 dark:text-white font-semibold">Chat</h3>
-                {status === "connected" && (
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {status === "connected" && (
+          {isChatOpen && (
+            <div
+              className="fixed inset-0 z-40 lg:relative lg:inset-auto lg:z-auto flex flex-col w-full lg:w-[300px] bg-white dark:bg-[#1a1a1a] border-l border-gray-200 dark:border-white/10 flex-shrink-0"
+            >
+              {/* Chat header */}
+              <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200 dark:border-white/10">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-green-500" />
+                  <h3 className="text-gray-900 dark:text-white font-semibold text-sm sm:text-base">Chat</h3>
+                  {status === "connected" && (
+                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {status === "connected" && (
+                    <button
+                      onClick={() => setShowReport(true)}
+                      className="text-red-400/60 hover:text-red-500 p-1 transition-colors"
+                      title="Denunciar"
+                    >
+                      <Flag className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
-                    onClick={() => setShowReport(true)}
-                    className="text-red-400/60 hover:text-red-500 p-1 transition-colors"
-                    title="Denunciar"
+                    onClick={() => setIsChatOpen(false)}
+                    className="text-gray-400 hover:text-gray-700 dark:hover:text-white p-1"
                   >
-                    <Flag className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                   </button>
-                )}
-                <button
-                  onClick={() => setIsChatOpen(false)}
-                  className="lg:hidden text-gray-400 hover:text-gray-700 dark:hover:text-white p-1"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                </div>
               </div>
-            </div>
 
             {/* Messages area */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
@@ -679,6 +797,7 @@ const Chat = () => {
               </div>
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -721,21 +840,21 @@ const Chat = () => {
       {activeTab === "encontrar" && (
         <div className="flex-1 flex flex-col bg-gray-50 dark:bg-[#111] overflow-hidden">
           {/* Search bar + filters */}
-          <div className="p-4 bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-white/10">
+          <div className="p-3 sm:p-4 bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-white/10">
             <div className="max-w-3xl mx-auto">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                   <input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Buscar por nome, país ou bio..."
-                    className="w-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500/30 rounded-xl pl-12 pr-4 py-3 text-sm"
+                    placeholder="Buscar..."
+                    className="w-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500/30 rounded-xl pl-9 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 text-xs sm:text-sm"
                   />
                 </div>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-xs sm:text-sm font-medium transition-colors ${
                     showFilters || filterGender !== "all" || filterCountry !== "all"
                       ? "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400"
                       : "bg-gray-100 dark:bg-white/10 border-gray-200 dark:border-white/20 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/20"
@@ -746,7 +865,7 @@ const Chat = () => {
                 </button>
                 <button
                   onClick={refreshUsers}
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/20 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/20 text-sm font-medium transition-colors"
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/20 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/20 text-xs sm:text-sm font-medium transition-colors"
                   title="Atualizar"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -755,9 +874,9 @@ const Chat = () => {
 
               {/* Filter options */}
               {showFilters && (
-                <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-white/5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Gênero:</span>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-white/5">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">Gênero:</span>
                     {[
                       { value: "all", label: "Todos" },
                       { value: "male", label: "👦 Masculino" },
@@ -767,7 +886,7 @@ const Chat = () => {
                       <button
                         key={opt.value}
                         onClick={() => setFilterGender(opt.value)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                           filterGender === opt.value
                             ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
                             : "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10"
@@ -777,8 +896,8 @@ const Chat = () => {
                       </button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">País:</span>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">País:</span>
                     <select
                       value={filterCountry}
                       onChange={(e) => setFilterCountry(e.target.value)}
@@ -842,11 +961,11 @@ const Chat = () => {
 
               {/* Empty state */}
               {!loadingUsers && filteredUsers.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-6">
-                    <Users className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+                <div className="flex flex-col items-center justify-center py-12 sm:py-20 text-center">
+                  <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-4 sm:mb-6">
+                    <Users className="w-7 h-7 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2">
                     {onlineUsers.length === 0
                       ? "Ninguém online agora"
                       : "Nenhum resultado encontrado"}

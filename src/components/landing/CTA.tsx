@@ -41,7 +41,7 @@ const CTA = () => {
             <Button
               size="lg"
               onClick={handleAnonymous}
-              className="w-full sm:w-auto bg-white hover:bg-gray-100 text-green-600 font-bold px-10 py-7 text-lg shadow-xl transition-all duration-300 hover:scale-105 rounded-xl"
+              className="w-full sm:w-auto bg-white hover:bg-gray-100 text-green-600 font-bold px-8 sm:px-10 py-4 sm:py-7 text-base sm:text-lg shadow-xl transition-all duration-300 hover:scale-105 rounded-xl"
             >
               <Video className="mr-2 h-5 w-5" />
               Quero conversar agora
@@ -51,7 +51,7 @@ const CTA = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full sm:w-auto border-2 border-white/30 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white font-semibold px-10 py-7 text-lg transition-all duration-300 hover:scale-105 rounded-xl"
+                className="w-full sm:w-auto border-2 border-white/30 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white font-semibold px-8 sm:px-10 py-4 sm:py-7 text-base sm:text-lg transition-all duration-300 hover:scale-105 rounded-xl"
               >
                 Criar Conta Grátis
                 <ArrowRight className="ml-2 h-5 w-5" />

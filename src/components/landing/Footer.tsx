@@ -30,7 +30,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-2">
             <a href="/" className="inline-block mb-4">
-              <img src={logo} alt="TrocaIdeia" className="h-36 md:h-28 w-auto max-w-xl md:max-w-2xl lg:max-w-3xl" />
+              <img src={logo} alt="TrocaIdeia" className="h-12 sm:h-16 md:h-20 w-auto max-w-[200px] sm:max-w-xs md:max-w-lg" />
             </a>
             <p className="text-gray-400 text-sm leading-relaxed max-w-sm mb-6">
               Conectando pessoas próximas através de conversas espontâneas e seguras. A plataforma brasileira de chat aleatório.
