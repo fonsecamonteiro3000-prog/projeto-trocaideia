@@ -70,6 +70,9 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
   const pollInterval = useRef<NodeJS.Timeout | null>(null);
   const offerRetryInterval = useRef<NodeJS.Timeout | null>(null);
   const pendingOffer = useRef<RTCSessionDescriptionInit | null>(null);
+  const autoRequeue = useRef(false);
+  const requeueTimeout = useRef<NodeJS.Timeout | null>(null);
+  const findMatchRef = useRef<(() => Promise<void>) | null>(null);
 
   // Online counter simulation
   useEffect(() => {
@@ -122,6 +125,10 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
     if (offerRetryInterval.current) {
       clearInterval(offerRetryInterval.current);
       offerRetryInterval.current = null;
+    }
+    if (requeueTimeout.current) {
+      clearTimeout(requeueTimeout.current);
+      requeueTimeout.current = null;
     }
     pendingOffer.current = null;
     setRemoteStream(null);
@@ -222,8 +229,17 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
           pc.connectionState === "closed"
         ) {
           if (status === "connected") {
-            setStatus("disconnected");
             addMessage("O estranho se desconectou.", "system");
+            // Auto-requeue after a short delay
+            if (autoRequeue.current && localStreamRef.current) {
+              addMessage("Procurando outra pessoa...", "system");
+              cleanupPeerConnection();
+              requeueTimeout.current = setTimeout(() => {
+                findMatchRef.current?.();
+              }, 1500);
+            } else {
+              setStatus("disconnected");
+            }
           }
         }
       };
@@ -366,9 +382,17 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
         .on("broadcast", { event: "leave" }, (payload) => {
           const data = payload.payload;
           if (data.userId === userId) return;
-          setStatus("disconnected");
           addMessage("O estranho se desconectou.", "system");
           cleanupPeerConnection();
+          // Auto-requeue after the stranger leaves
+          if (autoRequeue.current && localStreamRef.current) {
+            addMessage("Procurando outra pessoa...", "system");
+            requeueTimeout.current = setTimeout(() => {
+              findMatchRef.current?.();
+            }, 1500);
+          } else {
+            setStatus("disconnected");
+          }
         })
         .subscribe();
 
@@ -388,6 +412,7 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
     cleanupPeerConnection();
     setMessages([]);
     setStatus("searching");
+    autoRequeue.current = true;
     addMessage("Procurando alguém...", "system");
 
     try {
@@ -519,7 +544,7 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
           }
         }, 1500);
 
-        // Timeout after 30s
+        // Timeout after 30s — retry automatically
         searchTimeout.current = setTimeout(async () => {
           if (pollInterval.current) {
             clearInterval(pollInterval.current);
@@ -528,8 +553,11 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
           // Clean up queue
           await supabase.from("chat_queue").delete().eq("id", queueEntry.id);
           
-          setStatus("disconnected");
-          addMessage("Nenhum parceiro encontrado. Tente novamente.", "system");
+          addMessage("Ninguém encontrado. Tentando de novo...", "system");
+          // Re-enter the queue
+          requeueTimeout.current = setTimeout(() => {
+            findMatchRef.current?.();
+          }, 2000);
         }, 30000);
       }
     } catch (err) {
@@ -538,6 +566,11 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
       addMessage("Erro ao procurar. Tente novamente.", "system");
     }
   }, [userId, cleanupPeerConnection, addMessage, setupSignaling, createPeerConnection]);
+
+  // Keep ref in sync so auto-requeue can call findMatch without circular deps
+  useEffect(() => {
+    findMatchRef.current = findMatch;
+  }, [findMatch]);
 
   // Fallback: create a demo room for testing
   const createDirectRoom = useCallback(async () => {
@@ -554,8 +587,9 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
     // Keep searching state - the signaling will handle connection when someone joins
   }, [setupSignaling, createPeerConnection, addMessage]);
 
-  // Disconnect from current chat
+  // Disconnect from current chat (manual stop — does NOT auto-requeue)
   const disconnect = useCallback(() => {
+    autoRequeue.current = false;
     if (signalingChannel.current) {
       signalingChannel.current.send({
         type: "broadcast",

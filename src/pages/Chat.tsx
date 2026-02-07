@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWebRTC } from "@/hooks/useWebRTC";
+import { usePresence, type OnlineUser } from "@/hooks/usePresence";
 import { supabase } from "@/lib/supabase";
 import ReportModal from "@/components/chat/ReportModal";
 import GenderSelector from "@/components/chat/GenderSelector";
 import CountrySelector from "@/components/chat/CountrySelector";
 import ProfileModal from "@/components/chat/ProfileModal";
+import UserCard from "@/components/chat/UserCard";
 import ThemeToggle from "@/components/ThemeToggle";
 import {
   Send,
@@ -25,6 +27,8 @@ import {
   MapPin,
   Search,
   Users,
+  RefreshCw,
+  Filter,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
@@ -57,6 +61,42 @@ const Chat = () => {
   const [country, setCountry] = useState(profile.country || "BR");
   const [activeTab, setActiveTab] = useState<ChatTab>("video");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterGender, setFilterGender] = useState<string>("all");
+  const [filterCountry, setFilterCountry] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Presence hook — registers this user as online and fetches online users
+  const { onlineUsers, loading: loadingUsers, refreshUsers } = usePresence({
+    userId: currentUserId,
+    displayName: profile.displayName || user?.email?.split("@")[0] || "Usuário",
+    avatarUrl: profile.avatarUrl,
+    gender: profile.gender,
+    country: profile.country || country,
+    bio: profile.bio,
+    isAnonymous,
+  });
+
+  // Filter online users based on search/filters
+  const filteredUsers = useMemo(() => {
+    return onlineUsers.filter((u) => {
+      // Search query
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = u.display_name.toLowerCase().includes(q);
+        const matchesBio = u.bio?.toLowerCase().includes(q);
+        const matchesCountry = u.country?.toLowerCase().includes(q);
+        if (!matchesName && !matchesBio && !matchesCountry) return false;
+      }
+
+      // Gender filter
+      if (filterGender !== "all" && u.gender !== filterGender) return false;
+
+      // Country filter
+      if (filterCountry !== "all" && u.country !== filterCountry) return false;
+
+      return true;
+    });
+  }, [onlineUsers, searchQuery, filterGender, filterCountry]);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -141,6 +181,12 @@ const Chat = () => {
   const handleCountryChange = (code: string) => {
     setCountry(code);
     updateProfile({ country: code });
+  };
+
+  const handleConnectToUser = (targetUser: OnlineUser) => {
+    // Switch to video tab and find match
+    setActiveTab("video");
+    findMatch();
   };
 
   const getStatusText = () => {
@@ -674,58 +720,164 @@ const Chat = () => {
       {/* ═══════════ ENCONTRAR AMIGOS TAB ═══════════ */}
       {activeTab === "encontrar" && (
         <div className="flex-1 flex flex-col bg-gray-50 dark:bg-[#111] overflow-hidden">
-          {/* Search bar */}
+          {/* Search bar + filters */}
           <div className="p-4 bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-white/10">
-            <div className="max-w-xl mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar pessoas por nome, país ou interesses..."
-                className="w-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500/30 rounded-xl pl-12 pr-4 py-3 text-sm"
-              />
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar por nome, país ou bio..."
+                    className="w-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500/30 rounded-xl pl-12 pr-4 py-3 text-sm"
+                  />
+                </div>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-colors ${
+                    showFilters || filterGender !== "all" || filterCountry !== "all"
+                      ? "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400"
+                      : "bg-gray-100 dark:bg-white/10 border-gray-200 dark:border-white/20 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/20"
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  <span className="hidden sm:inline">Filtros</span>
+                </button>
+                <button
+                  onClick={refreshUsers}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/20 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/20 text-sm font-medium transition-colors"
+                  title="Atualizar"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Filter options */}
+              {showFilters && (
+                <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-white/5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Gênero:</span>
+                    {[
+                      { value: "all", label: "Todos" },
+                      { value: "male", label: "👦 Masculino" },
+                      { value: "female", label: "👧 Feminino" },
+                      { value: "other", label: "🧑 Outro" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setFilterGender(opt.value)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          filterGender === opt.value
+                            ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
+                            : "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">País:</span>
+                    <select
+                      value={filterCountry}
+                      onChange={(e) => setFilterCountry(e.target.value)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#2a2a2a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 focus:outline-none focus:border-green-500 [&>option]:bg-white [&>option]:dark:bg-[#2a2a2a] [&>option]:text-gray-900 [&>option]:dark:text-gray-200"
+                    >
+                      <option value="all">Todos os países</option>
+                      <option value="BR">🇧🇷 Brasil</option>
+                      <option value="US">🇺🇸 EUA</option>
+                      <option value="PT">🇵🇹 Portugal</option>
+                      <option value="AR">🇦🇷 Argentina</option>
+                      <option value="MX">🇲🇽 México</option>
+                      <option value="ES">🇪🇸 Espanha</option>
+                      <option value="FR">🇫🇷 França</option>
+                      <option value="DE">🇩🇪 Alemanha</option>
+                      <option value="GB">🇬🇧 Reino Unido</option>
+                      <option value="JP">🇯🇵 Japão</option>
+                    </select>
+                  </div>
+                  {(filterGender !== "all" || filterCountry !== "all") && (
+                    <button
+                      onClick={() => {
+                        setFilterGender("all");
+                        setFilterCountry("all");
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 flex flex-col items-center justify-center px-4">
-            <div className="max-w-md w-full text-center">
-              <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center mx-auto mb-6">
-                <Users className="w-10 h-10 text-green-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                Encontrar Amigos
-              </h2>
-              <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                Descubra pessoas com interesses parecidos na sua região. Filtre por país, gênero ou interesses para encontrar a pessoa ideal para conversar.
-              </p>
-              {isAnonymous ? (
-                <div className="bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-xl p-4 mb-6">
-                  <p className="text-yellow-700 dark:text-yellow-400 text-sm font-medium">
-                    Crie uma conta para descobrir pessoas e fazer amizades.
-                  </p>
+          {/* Users list */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="max-w-3xl mx-auto">
+              {/* Stats bar */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span>
+                    <strong className="text-gray-900 dark:text-white">{onlineUsers.length}</strong>{" "}
+                    {onlineUsers.length === 1 ? "pessoa online" : "pessoas online"}
+                  </span>
+                  {filteredUsers.length !== onlineUsers.length && (
+                    <span className="text-gray-400">
+                      ({filteredUsers.length} {filteredUsers.length === 1 ? "resultado" : "resultados"})
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto mb-6">
-                  <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-center">
-                    <MapPin className="w-6 h-6 text-green-500 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Perto de você</p>
-                    <p className="text-xs text-gray-400">Em breve</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-center">
-                    <Users className="w-6 h-6 text-green-500 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Online agora</p>
-                    <p className="text-xs text-green-500 font-medium">{onlineCount}</p>
-                  </div>
+              </div>
+
+              {/* Loading state */}
+              {loadingUsers && (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 text-green-500 animate-spin mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">Carregando usuários...</p>
                 </div>
               )}
-              <button
-                onClick={() => setActiveTab("video")}
-                className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-green-500/20"
-              >
-                <Video className="w-5 h-5 inline mr-2" />
-                Conversar agora por vídeo
-              </button>
+
+              {/* Empty state */}
+              {!loadingUsers && filteredUsers.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-6">
+                    <Users className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                    {onlineUsers.length === 0
+                      ? "Ninguém online agora"
+                      : "Nenhum resultado encontrado"}
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm mb-6">
+                    {onlineUsers.length === 0
+                      ? "Seja o primeiro! Abra o chat de vídeo e espere alguém aparecer."
+                      : "Tente mudar os filtros ou a busca."}
+                  </p>
+                  <button
+                    onClick={() => setActiveTab("video")}
+                    className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-green-500/20"
+                  >
+                    <Video className="w-5 h-5 inline mr-2" />
+                    Ir para o Chat de Vídeo
+                  </button>
+                </div>
+              )}
+
+              {/* User cards grid */}
+              {!loadingUsers && filteredUsers.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredUsers.map((u) => (
+                    <UserCard
+                      key={u.id}
+                      user={u}
+                      onConnect={handleConnectToUser}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
