@@ -58,24 +58,24 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-hero-gradient flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-[#0a1a10] dark:via-[#0d1f14] dark:to-[#0a1a10] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <img src={logo} alt="TrocaIdeia" className="h-20 w-auto mx-auto mb-4" />
           </Link>
-          <h1 className="text-2xl font-bold text-white">Criar conta</h1>
-          <p className="text-white/60 mt-2">Junte-se à comunidade TrocaIdeia</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Criar conta</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">Junte-se à comunidade TrocaIdeia</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8">
+        <div className="bg-white dark:bg-white/10 backdrop-blur-xl border border-gray-200 dark:border-white/20 rounded-2xl p-8 shadow-lg">
           {/* Google */}
           <Button
             onClick={handleGoogleLogin}
             variant="outline"
-            className="w-full bg-white hover:bg-white/90 text-gray-900 font-semibold py-6 text-base border-0 mb-6"
+            className="w-full bg-white dark:bg-white hover:bg-gray-50 text-gray-900 font-semibold py-6 text-base border border-gray-200 mb-6"
           >
             <Chrome className="mr-2 h-5 w-5" />
             Registrar com Google
@@ -84,21 +84,21 @@ const Register = () => {
           {/* Divider */}
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20" />
+              <div className="w-full border-t border-gray-200 dark:border-white/20" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-transparent text-white/50">ou registre com email</span>
+              <span className="px-4 bg-white dark:bg-transparent text-gray-400 dark:text-gray-500">ou registre com email</span>
             </div>
           </div>
 
           {/* Form */}
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-white/80">
+              <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">
                 Nome
               </Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="name"
                   type="text"
@@ -106,17 +106,17 @@ const Register = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary"
+                  className="pl-10 bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white/80">
+              <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
                 Email
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="email"
                   type="email"
@@ -124,17 +124,17 @@ const Register = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary"
+                  className="pl-10 bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-white/80">
+              <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
                 Senha
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="password"
                   type="password"
@@ -142,17 +142,17 @@ const Register = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary"
+                  className="pl-10 bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-white/80">
+              <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-300">
                 Confirmar Senha
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -160,19 +160,19 @@ const Register = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary"
+                  className="pl-10 bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500"
                 />
               </div>
             </div>
 
             {error && (
-              <p className="text-red-400 text-sm bg-red-500/10 p-3 rounded-lg">
+              <p className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-500/10 p-3 rounded-lg">
                 {error}
               </p>
             )}
 
             {success && (
-              <p className="text-green-400 text-sm bg-green-500/10 p-3 rounded-lg">
+              <p className="text-green-600 dark:text-green-400 text-sm bg-green-50 dark:bg-green-500/10 p-3 rounded-lg">
                 {success}
               </p>
             )}
@@ -180,7 +180,7 @@ const Register = () => {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 text-base shadow-glow"
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-6 text-base shadow-lg shadow-green-500/20"
             >
               {loading ? (
                 "Criando conta..."
@@ -194,11 +194,11 @@ const Register = () => {
           </form>
 
           {/* Login link */}
-          <p className="text-center text-white/60 mt-6 text-sm">
+          <p className="text-center text-gray-500 dark:text-gray-400 mt-6 text-sm">
             Já tem conta?{" "}
             <Link
               to="/login"
-              className="text-primary hover:text-primary/80 font-semibold transition-colors"
+              className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-semibold transition-colors"
             >
               Faça login
             </Link>
