@@ -40,24 +40,24 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-hero-gradient flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-[#0a1a10] dark:via-[#0d1f14] dark:to-[#0a1a10] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <img src={logo} alt="TrocaIdeia" className="h-20 w-auto mx-auto mb-4" />
           </Link>
-          <h1 className="text-2xl font-bold text-white">Entrar no TrocaIdeia</h1>
-          <p className="text-white/60 mt-2">Faça login para começar a conversar</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Entrar no TrocaIdeia</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">Faça login para começar a conversar</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8">
+        <div className="bg-white dark:bg-white/10 backdrop-blur-xl border border-gray-200 dark:border-white/20 rounded-2xl p-8 shadow-lg">
           {/* Google Login */}
           <Button
             onClick={handleGoogleLogin}
             variant="outline"
-            className="w-full bg-white hover:bg-white/90 text-gray-900 font-semibold py-6 text-base border-0 mb-3"
+            className="w-full bg-white dark:bg-white hover:bg-gray-50 text-gray-900 font-semibold py-6 text-base border border-gray-200 mb-3"
           >
             <Chrome className="mr-2 h-5 w-5" />
             Continuar com Google
@@ -70,7 +70,7 @@ const Login = () => {
               navigate("/chat");
             }}
             variant="outline"
-            className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-6 text-base border border-white/20 mb-6"
+            className="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-6 text-base border border-gray-200 dark:border-white/20 mb-6"
           >
             <UserX className="mr-2 h-5 w-5" />
             Entrar como Anônimo
@@ -79,21 +79,21 @@ const Login = () => {
           {/* Divider */}
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20" />
+              <div className="w-full border-t border-gray-200 dark:border-white/20" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-transparent text-white/50">ou entre com email</span>
+              <span className="px-4 bg-white dark:bg-transparent text-gray-400 dark:text-gray-500">ou entre com email</span>
             </div>
           </div>
 
           {/* Email Form */}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white/80">
+              <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
                 Email
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="email"
                   type="email"
@@ -101,17 +101,17 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary"
+                  className="pl-10 bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-white/80">
+              <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
                 Senha
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="password"
                   type="password"
@@ -119,13 +119,13 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary"
+                  className="pl-10 bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/20 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-green-500"
                 />
               </div>
             </div>
 
             {error && (
-              <p className="text-red-400 text-sm bg-red-500/10 p-3 rounded-lg">
+              <p className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-500/10 p-3 rounded-lg">
                 {error}
               </p>
             )}
@@ -133,7 +133,7 @@ const Login = () => {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 text-base shadow-glow"
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-6 text-base shadow-lg shadow-green-500/20"
             >
               {loading ? (
                 "Entrando..."
@@ -147,11 +147,11 @@ const Login = () => {
           </form>
 
           {/* Register link */}
-          <p className="text-center text-white/60 mt-6 text-sm">
+          <p className="text-center text-gray-500 dark:text-gray-400 mt-6 text-sm">
             Não tem conta?{" "}
             <Link
               to="/register"
-              className="text-primary hover:text-primary/80 font-semibold transition-colors"
+              className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-semibold transition-colors"
             >
               Crie uma agora
             </Link>

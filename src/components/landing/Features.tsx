@@ -25,14 +25,14 @@ const features = [
 
 const Features = () => {
   return (
-    <section id="como-funciona" className="py-20 md:py-32 bg-background">
+    <section id="como-funciona" className="py-20 md:py-32 bg-white dark:bg-[#111]">
       <div className="container px-4">
         {/* Section header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
             Como funciona
           </h2>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-gray-500 dark:text-gray-400 text-lg">
             Uma plataforma pensada para conexões reais, com segurança e simplicidade.
           </p>
         </div>
@@ -42,19 +42,19 @@ const Features = () => {
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className="group relative p-6 md:p-8 rounded-2xl bg-card border border-border hover:border-primary/30 shadow-soft hover:shadow-glow transition-all duration-300"
+              className="group relative p-6 md:p-8 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:border-green-300 dark:hover:border-green-500/30 shadow-sm hover:shadow-lg transition-all duration-300"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Icon */}
-              <div className="mb-5 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+              <div className="mb-5 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400 group-hover:bg-green-500 group-hover:text-white transition-colors duration-300">
                 <feature.icon className="w-6 h-6" />
               </div>
 
               {/* Content */}
-              <h3 className="text-xl font-semibold text-foreground mb-2">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                 {feature.title}
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-gray-500 dark:text-gray-400 leading-relaxed">
                 {feature.description}
               </p>
 
