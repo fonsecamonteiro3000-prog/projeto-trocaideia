@@ -15,7 +15,6 @@ const Index = () => {
         <Features />
         <ChatMockup />
         <Security />
-        <CTA />
       </main>
       <Footer />
     </div>
