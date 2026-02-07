@@ -68,6 +68,8 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
   const localStreamRef = useRef<MediaStream | null>(null);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
   const pollInterval = useRef<NodeJS.Timeout | null>(null);
+  const offerRetryInterval = useRef<NodeJS.Timeout | null>(null);
+  const pendingOffer = useRef<RTCSessionDescriptionInit | null>(null);
 
   // Online counter simulation
   useEffect(() => {
@@ -117,6 +119,11 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
       clearInterval(pollInterval.current);
       pollInterval.current = null;
     }
+    if (offerRetryInterval.current) {
+      clearInterval(offerRetryInterval.current);
+      offerRetryInterval.current = null;
+    }
+    pendingOffer.current = null;
     setRemoteStream(null);
     currentRoomId.current = null;
     isInitiator.current = false;
@@ -272,6 +279,27 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
       });
 
       channel
+        .on("broadcast", { event: "ready" }, async (payload) => {
+          const data = payload.payload;
+          if (data.userId === userId) return;
+
+          // The responder is ready — send the offer now (and stop retrying)
+          console.log("Partner is ready, sending offer");
+          if (offerRetryInterval.current) {
+            clearInterval(offerRetryInterval.current);
+            offerRetryInterval.current = null;
+          }
+          if (pendingOffer.current && signalingChannel.current) {
+            signalingChannel.current.send({
+              type: "broadcast",
+              event: "offer",
+              payload: {
+                sdp: pendingOffer.current,
+                userId,
+              },
+            });
+          }
+        })
         .on("broadcast", { event: "offer" }, async (payload) => {
           const data = payload.payload;
           if (data.userId === userId) return;
@@ -304,6 +332,13 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
           if (data.userId === userId) return;
 
           console.log("Received answer");
+          // Stop retrying the offer — we got the answer
+          if (offerRetryInterval.current) {
+            clearInterval(offerRetryInterval.current);
+            offerRetryInterval.current = null;
+          }
+          pendingOffer.current = null;
+
           const pc = peerConnection.current;
           if (!pc) return;
 
@@ -356,6 +391,20 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
     addMessage("Procurando alguém...", "system");
 
     try {
+      // Clean up old queue entries for this user first
+      await supabase
+        .from("chat_queue")
+        .delete()
+        .eq("user_id", userId);
+
+      // Also clean up stale entries older than 2 minutes
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      await supabase
+        .from("chat_queue")
+        .delete()
+        .eq("status", "waiting")
+        .lt("created_at", twoMinutesAgo);
+
       // Register in queue
       const { data: queueEntry, error: insertError } = await supabase
         .from("chat_queue")
@@ -377,6 +426,7 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
         .neq("user_id", userId)
         .eq("status", "waiting")
         .neq("id", queueEntry.id)
+        .order("created_at", { ascending: true })
         .limit(1)
         .single();
 
@@ -399,21 +449,40 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
         setStatus("connecting");
         addMessage("Conectando...", "system");
 
-        // Create and send offer
+        // Create offer and store it — will send when partner is "ready"
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
+        pendingOffer.current = offer;
 
-        // Small delay to ensure partner has joined the channel
+        // Retry sending the offer every 2 seconds in case the partner
+        // subscribed before the "ready" event was set up
+        offerRetryInterval.current = setInterval(() => {
+          if (signalingChannel.current && pendingOffer.current) {
+            console.log("Retrying offer...");
+            signalingChannel.current.send({
+              type: "broadcast",
+              event: "offer",
+              payload: {
+                sdp: pendingOffer.current,
+                userId,
+              },
+            });
+          }
+        }, 2000);
+
+        // Also send offer after a short delay as initial attempt
         setTimeout(() => {
-          signalingChannel.current?.send({
-            type: "broadcast",
-            event: "offer",
-            payload: {
-              sdp: offer,
-              userId,
-            },
-          });
-        }, 1500);
+          if (signalingChannel.current && pendingOffer.current) {
+            signalingChannel.current.send({
+              type: "broadcast",
+              event: "offer",
+              payload: {
+                sdp: pendingOffer.current,
+                userId,
+              },
+            });
+          }
+        }, 1000);
       } else {
         // Wait to be matched (polling)
         pollInterval.current = setInterval(async () => {
@@ -436,8 +505,19 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
 
             setStatus("connecting");
             addMessage("Conectando...", "system");
+
+            // Notify the initiator that we are ready to receive the offer
+            setTimeout(() => {
+              if (signalingChannel.current) {
+                signalingChannel.current.send({
+                  type: "broadcast",
+                  event: "ready",
+                  payload: { userId },
+                });
+              }
+            }, 500);
           }
-        }, 2000);
+        }, 1500);
 
         // Timeout after 30s
         searchTimeout.current = setTimeout(async () => {
@@ -448,13 +528,14 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
           // Clean up queue
           await supabase.from("chat_queue").delete().eq("id", queueEntry.id);
           
-          // Try direct room as fallback
-          await createDirectRoom();
+          setStatus("disconnected");
+          addMessage("Nenhum parceiro encontrado. Tente novamente.", "system");
         }, 30000);
       }
     } catch (err) {
       console.error("Error finding match:", err);
-      await createDirectRoom();
+      setStatus("disconnected");
+      addMessage("Erro ao procurar. Tente novamente.", "system");
     }
   }, [userId, cleanupPeerConnection, addMessage, setupSignaling, createPeerConnection]);
 
