@@ -4,11 +4,17 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Hero = () => {
-  const { signInAnonymously } = useAuth();
+  const { signInAnonymously, user, isAnonymous } = useAuth();
   const navigate = useNavigate();
+
+  const isLoggedIn = !!user || isAnonymous;
 
   const handleAnonymous = () => {
     signInAnonymously();
+    navigate("/chat");
+  };
+
+  const handleGoToChat = () => {
     navigate("/chat");
   };
 
@@ -68,36 +74,52 @@ const Hero = () => {
 
           {/* CTA Buttons */}
           <div className="animate-fade-up-delay-3 flex flex-col sm:flex-row items-center justify-center gap-4 mb-5">
-            <Button
-              size="lg"
-              onClick={handleAnonymous}
-              className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-8 sm:px-12 py-4 sm:py-7 text-base sm:text-lg shadow-lg shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 rounded-2xl"
-            >
-              <Video className="mr-2 h-5 w-5" />
-              Quero conversar
-            </Button>
-
-            <Link to="/register">
+            {isLoggedIn ? (
               <Button
                 size="lg"
-                variant="outline"
-                className="w-full sm:w-auto border-2 border-green-200 dark:border-green-500/30 bg-white/80 dark:bg-white/5 backdrop-blur-sm hover:bg-green-50 dark:hover:bg-green-500/10 text-green-700 dark:text-green-400 font-semibold px-8 sm:px-10 py-4 sm:py-7 text-base sm:text-lg transition-all duration-300 hover:scale-105 rounded-2xl"
+                onClick={handleGoToChat}
+                className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-8 sm:px-12 py-4 sm:py-7 text-base sm:text-lg shadow-lg shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 rounded-2xl"
               >
-                Criar conta grátis
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <Video className="mr-2 h-5 w-5" />
+                Ir para o Chat
               </Button>
-            </Link>
+            ) : (
+              <>
+                <Button
+                  size="lg"
+                  onClick={handleAnonymous}
+                  className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-8 sm:px-12 py-4 sm:py-7 text-base sm:text-lg shadow-lg shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 rounded-2xl"
+                >
+                  <Video className="mr-2 h-5 w-5" />
+                  Quero conversar
+                </Button>
+
+                <Link to="/register">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto border-2 border-green-200 dark:border-green-500/30 bg-white/80 dark:bg-white/5 backdrop-blur-sm hover:bg-green-50 dark:hover:bg-green-500/10 text-green-700 dark:text-green-400 font-semibold px-8 sm:px-10 py-4 sm:py-7 text-base sm:text-lg transition-all duration-300 hover:scale-105 rounded-2xl"
+                  >
+                    Criar conta grátis
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Login link */}
-          <div className="animate-fade-up-delay-3 flex justify-center mb-14">
-            <Link
-              to="/login"
-              className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors duration-300"
-            >
-              Já tem conta? <span className="underline underline-offset-2">Fazer login</span>
-            </Link>
-          </div>
+          {!isLoggedIn && (
+            <div className="animate-fade-up-delay-3 flex justify-center mb-14">
+              <Link
+                to="/login"
+                className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors duration-300"
+              >
+                Já tem conta? <span className="underline underline-offset-2">Fazer login</span>
+              </Link>
+            </div>
+          )}
+          {isLoggedIn && <div className="mb-14" />}
 
           {/* Feature pills */}
           <div className="animate-fade-up-delay-3 flex flex-wrap items-center justify-center gap-3 mb-16">

@@ -43,6 +43,7 @@ interface UseWebRTCReturn {
   sendMessage: (text: string) => void;
   messages: ChatMessage[];
   onlineCount: number;
+  roomId: string | null;
 }
 
 export interface ChatMessage {
@@ -76,6 +77,8 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
   const requeueTimeout = useRef<NodeJS.Timeout | null>(null);
   const findMatchRef = useRef<(() => Promise<void>) | null>(null);
   const matchedFlag = useRef(false);
+  const conversationId = useRef<string | null>(null);
+  const [exposedRoomId, setExposedRoomId] = useState<string | null>(null);
 
   // Online counter simulation
   useEffect(() => {
@@ -91,17 +94,41 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
 
   const addMessage = useCallback(
     (text: string, sender: ChatMessage["sender"]) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          text,
-          sender,
-          timestamp: new Date(),
-        },
-      ]);
+      const msg: ChatMessage = {
+        id: crypto.randomUUID(),
+        text,
+        sender,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, msg]);
+
+      // Persist non-system messages to the database
+      if (sender !== "system" && conversationId.current && currentRoomId.current && userId) {
+        supabase
+          .from("saved_messages")
+          .insert({
+            conversation_id: conversationId.current,
+            room_id: currentRoomId.current,
+            sender_id: userId,
+            sender_type: sender,
+            content: text,
+          })
+          .then(({ error }) => {
+            if (error) console.error("Error saving message:", error);
+          });
+
+        // Update conversation last_message and count
+        supabase
+          .from("saved_conversations")
+          .update({
+            last_message: text.substring(0, 200),
+            message_count: undefined, // will use RPC or just increment client-side
+          })
+          .eq("id", conversationId.current)
+          .then(() => {});
+      }
     },
-    []
+    [userId]
   );
 
   const cleanupPeerConnection = useCallback(() => {
@@ -143,6 +170,8 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
     }
     pendingOffer.current = null;
     matchedFlag.current = false;
+    conversationId.current = null;
+    setExposedRoomId(null);
     setRemoteStream(null);
     currentRoomId.current = null;
     isInitiator.current = false;
@@ -234,7 +263,31 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
         console.log("Connection state:", pc.connectionState);
         if (pc.connectionState === "connected") {
           setStatus("connected");
+          setExposedRoomId(roomId);
           addMessage("Conectado! Diga olá 👋", "system");
+
+          // Create a conversation record for message persistence
+          if (userId) {
+            supabase
+              .from("saved_conversations")
+              .insert({
+                room_id: roomId,
+                user_id: userId,
+                partner_name: "Desconhecido",
+                is_anonymous: false,
+                started_at: new Date().toISOString(),
+                message_count: 0,
+              })
+              .select()
+              .single()
+              .then(({ data, error }) => {
+                if (error) {
+                  console.error("Error creating conversation:", error);
+                } else if (data) {
+                  conversationId.current = data.id;
+                }
+              });
+          }
         } else if (
           pc.connectionState === "disconnected" ||
           pc.connectionState === "failed" ||
@@ -613,6 +666,16 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
   // Disconnect from current chat (manual stop — does NOT auto-requeue)
   const disconnect = useCallback(() => {
     autoRequeue.current = false;
+
+    // Mark conversation as ended
+    if (conversationId.current) {
+      supabase
+        .from("saved_conversations")
+        .update({ ended_at: new Date().toISOString() })
+        .eq("id", conversationId.current)
+        .then(() => {});
+    }
+
     if (signalingChannel.current) {
       signalingChannel.current.send({
         type: "broadcast",
@@ -699,5 +762,6 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
     sendMessage,
     messages,
     onlineCount,
+    roomId: exposedRoomId,
   };
 }

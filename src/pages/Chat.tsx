@@ -51,6 +51,7 @@ const Chat = () => {
     sendMessage,
     messages,
     onlineCount,
+    roomId,
   } = useWebRTC(currentUserId);
 
   const [input, setInput] = useState("");
@@ -65,6 +66,65 @@ const Chat = () => {
   const [filterGender, setFilterGender] = useState<string>("all");
   const [filterCountry, setFilterCountry] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Saved conversations state
+  interface SavedConversation {
+    id: string;
+    room_id: string;
+    partner_name: string;
+    started_at: string;
+    ended_at: string | null;
+    last_message: string | null;
+    message_count: number;
+  }
+  interface SavedMessage {
+    id: string;
+    sender_type: "you" | "stranger" | "system";
+    content: string;
+    created_at: string;
+  }
+  const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<SavedConversation | null>(null);
+  const [conversationMessages, setConversationMessages] = useState<SavedMessage[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Load saved conversations when switching to mensagens tab
+  useEffect(() => {
+    if (activeTab === "mensagens" && currentUserId) {
+      setLoadingConversations(true);
+      supabase
+        .from("saved_conversations")
+        .select("*")
+        .eq("user_id", currentUserId)
+        .order("started_at", { ascending: false })
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Error loading conversations:", error);
+          } else {
+            setSavedConversations((data as SavedConversation[]) || []);
+          }
+          setLoadingConversations(false);
+        });
+    }
+  }, [activeTab, currentUserId]);
+
+  // Load messages for a selected conversation
+  const loadConversationMessages = async (conv: SavedConversation) => {
+    setSelectedConversation(conv);
+    setLoadingMessages(true);
+    const { data, error } = await supabase
+      .from("saved_messages")
+      .select("*")
+      .eq("conversation_id", conv.id)
+      .order("created_at", { ascending: true });
+    if (error) {
+      console.error("Error loading messages:", error);
+    } else {
+      setConversationMessages((data as SavedMessage[]) || []);
+    }
+    setLoadingMessages(false);
+  };
 
   // Presence hook — registers this user as online and fetches online users
   const { onlineUsers, loading: loadingUsers, refreshUsers } = usePresence({
@@ -820,36 +880,163 @@ const Chat = () => {
 
       {/* ═══════════ MENSAGENS TAB ═══════════ */}
       {activeTab === "mensagens" && (
-        <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-[#111] px-4">
-          <div className="max-w-md w-full text-center">
-            <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center mx-auto mb-6">
-              <MessageSquare className="w-10 h-10 text-green-500" />
+        <div className="flex-1 flex flex-col bg-gray-50 dark:bg-[#111] overflow-hidden">
+          {selectedConversation ? (
+            // ─── Viewing a conversation ───
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Conversation header */}
+              <div className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-white/10 px-4 py-3 flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setSelectedConversation(null);
+                    setConversationMessages([]);
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </button>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                    {selectedConversation.partner_name}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(selectedConversation.started_at).toLocaleDateString("pt-BR", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {loadingMessages ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 text-green-500 animate-spin" />
+                  </div>
+                ) : conversationMessages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <MessageSquare className="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                      Nenhuma mensagem nesta conversa.
+                    </p>
+                  </div>
+                ) : (
+                  conversationMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.sender_type === "you" ? "justify-end" : msg.sender_type === "system" ? "justify-center" : "justify-start"}`}
+                    >
+                      {msg.sender_type === "system" ? (
+                        <span className="text-xs text-gray-400 dark:text-gray-500 italic px-3 py-1">
+                          {msg.content}
+                        </span>
+                      ) : (
+                        <div
+                          className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
+                            msg.sender_type === "you"
+                              ? "bg-green-500 text-white rounded-br-md"
+                              : "bg-white dark:bg-white/10 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 rounded-bl-md"
+                          }`}
+                        >
+                          <p>{msg.content}</p>
+                          <p className={`text-[10px] mt-1 ${msg.sender_type === "you" ? "text-green-100" : "text-gray-400"}`}>
+                            {new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-              Suas Mensagens
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-              Aqui aparecerão suas conversas salvas. Converse por vídeo e, se rolar uma conexão, vocês podem trocar contatos e continuar a conversa!
-            </p>
-            {isAnonymous ? (
-              <div className="bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-xl p-4 mb-6">
-                <p className="text-yellow-700 dark:text-yellow-400 text-sm font-medium">
-                  Crie uma conta para salvar suas conversas e acessar o histórico de mensagens.
+          ) : (
+            // ─── Conversations list ───
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-white/10 px-4 py-3">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Suas Mensagens
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Histórico de conversas salvas
                 </p>
               </div>
-            ) : (
-              <p className="text-gray-400 dark:text-gray-500 text-sm">
-                Nenhuma conversa salva ainda. Comece a conversar!
-              </p>
-            )}
-            <button
-              onClick={() => setActiveTab("video")}
-              className="mt-4 px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-green-500/20"
-            >
-              <Video className="w-5 h-5 inline mr-2" />
-              Ir para o Chat de Vídeo
-            </button>
-          </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {loadingConversations ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 text-green-500 animate-spin" />
+                  </div>
+                ) : savedConversations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-4 text-center h-full">
+                    <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center mx-auto mb-6">
+                      <MessageSquare className="w-10 h-10 text-green-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                      Nenhuma conversa salva
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed max-w-sm">
+                      Suas conversas serão salvas automaticamente aqui. Comece a conversar para ver o histórico!
+                    </p>
+                    {isAnonymous && (
+                      <div className="bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-xl p-4 mb-6 max-w-sm">
+                        <p className="text-yellow-700 dark:text-yellow-400 text-sm font-medium">
+                          Crie uma conta para salvar suas conversas permanentemente.
+                        </p>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setActiveTab("video")}
+                      className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-green-500/20"
+                    >
+                      <Video className="w-5 h-5 inline mr-2" />
+                      Ir para o Chat de Vídeo
+                    </button>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100 dark:divide-white/5">
+                    {savedConversations.map((conv) => (
+                      <button
+                        key={conv.id}
+                        onClick={() => loadConversationMessages(conv)}
+                        className="w-full text-left px-4 py-4 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                            <User className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                                {conv.partner_name || "Desconhecido"}
+                              </span>
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+                                {new Date(conv.started_at).toLocaleDateString("pt-BR", {
+                                  day: "2-digit",
+                                  month: "short",
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                              {conv.last_message || "Conversa iniciada"}
+                            </p>
+                          </div>
+                          {conv.message_count > 0 && (
+                            <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center flex-shrink-0">
+                              {conv.message_count}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

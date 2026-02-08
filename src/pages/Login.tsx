@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,15 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signInWithEmail, signInWithGoogle, signInAnonymously } = useAuth();
+  const { user, isAnonymous, loading: authLoading, signInWithEmail, signInWithGoogle, signInAnonymously } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && (user || isAnonymous)) {
+      navigate("/chat", { replace: true });
+    }
+  }, [user, isAnonymous, authLoading, navigate]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();

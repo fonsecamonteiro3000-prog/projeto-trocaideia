@@ -54,40 +54,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // Check for existing anonymous session
-    const savedAnon = localStorage.getItem("trocaideia_anonymous");
-    if (savedAnon) {
-      try {
-        const parsed = JSON.parse(savedAnon);
-        setIsAnonymous(true);
-        setAnonymousId(parsed.id);
-        setProfile({
-          displayName: parsed.displayName,
-          gender: parsed.gender,
-          country: parsed.country || "BR",
-          isAnonymous: true,
-        });
-        setLoading(false);
-      } catch {
-        localStorage.removeItem("trocaideia_anonymous");
-      }
-    }
-
-    // Recupera sessão ativa
+    // First, check Supabase auth (takes priority over anonymous)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        // Authenticated user — clear any anonymous session
         setIsAnonymous(false);
-        setProfile((prev) => ({
-          ...prev,
+        localStorage.removeItem("trocaideia_anonymous");
+        setProfile({
           displayName:
             session.user.user_metadata?.full_name ||
             session.user.email?.split("@")[0] ||
             "Usuário",
           avatarUrl: session.user.user_metadata?.avatar_url,
           isAnonymous: false,
-        }));
+        });
+      } else {
+        // No Supabase session — check for anonymous session
+        const savedAnon = localStorage.getItem("trocaideia_anonymous");
+        if (savedAnon) {
+          try {
+            const parsed = JSON.parse(savedAnon);
+            setIsAnonymous(true);
+            setAnonymousId(parsed.id);
+            setProfile({
+              displayName: parsed.displayName,
+              gender: parsed.gender,
+              country: parsed.country || "BR",
+              isAnonymous: true,
+            });
+          } catch {
+            localStorage.removeItem("trocaideia_anonymous");
+          }
+        }
       }
       setLoading(false);
     });

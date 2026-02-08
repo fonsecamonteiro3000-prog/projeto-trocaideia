@@ -1,13 +1,18 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogIn } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Menu, X, LogIn, MessageSquare, UserCircle, LogOut } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo.png";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, isAnonymous, profile, signOut, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const isLoggedIn = !!user || isAnonymous;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,23 +59,69 @@ const Header = () => {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
-            <Link to="/login">
-              <Button
-                variant="ghost"
-                className="text-gray-700 dark:text-white hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-white/10 font-semibold"
-              >
-                <LogIn className="mr-2 h-4 w-4" />
-                Entrar
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button
-                size="lg"
-                className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 shadow-lg shadow-green-500/20 rounded-xl"
-              >
-                Criar Conta
-              </Button>
-            </Link>
+            {!loading && isLoggedIn ? (
+              <>
+                <Link to="/chat">
+                  <Button
+                    size="lg"
+                    className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 shadow-lg shadow-green-500/20 rounded-xl"
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Ir para o Chat
+                  </Button>
+                </Link>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10">
+                  {profile.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt=""
+                      className="w-7 h-7 rounded-full object-cover border border-gray-200 dark:border-white/20"
+                    />
+                  ) : (
+                    <UserCircle className="w-5 h-5 text-gray-400" />
+                  )}
+                  <span className="text-sm text-gray-700 dark:text-gray-300 max-w-[120px] truncate font-medium">
+                    {profile.displayName || "Usuário"}
+                  </span>
+                  {isAnonymous && (
+                    <span className="text-[10px] bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 px-1.5 py-0.5 rounded-full font-medium">
+                      Anônimo
+                    </span>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    await signOut();
+                    navigate("/");
+                  }}
+                  className="text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button
+                    variant="ghost"
+                    className="text-gray-700 dark:text-white hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-white/10 font-semibold"
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Entrar
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button
+                    size="lg"
+                    className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 shadow-lg shadow-green-500/20 rounded-xl"
+                  >
+                    Criar Conta
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -101,22 +152,71 @@ const Header = () => {
                 </a>
               ))}
               <div className="px-4 pt-4 space-y-2">
-                <Link to="/login" className="block">
-                  <Button
-                    variant="outline"
-                    className="w-full border-gray-200 dark:border-white/20 text-gray-700 dark:text-white hover:bg-green-50 dark:hover:bg-white/10 font-semibold"
-                  >
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Entrar
-                  </Button>
-                </Link>
-                <Link to="/register" className="block">
-                  <Button
-                    className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold"
-                  >
-                    Criar Conta
-                  </Button>
-                </Link>
+                {!loading && isLoggedIn ? (
+                  <>
+                    <Link to="/chat" className="block" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button
+                        className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold"
+                      >
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Ir para o Chat
+                      </Button>
+                    </Link>
+                    <div className="flex items-center justify-between px-2 py-2">
+                      <div className="flex items-center gap-2">
+                        {profile.avatarUrl ? (
+                          <img
+                            src={profile.avatarUrl}
+                            alt=""
+                            className="w-7 h-7 rounded-full object-cover border border-gray-200 dark:border-white/20"
+                          />
+                        ) : (
+                          <UserCircle className="w-5 h-5 text-gray-400" />
+                        )}
+                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                          {profile.displayName || "Usuário"}
+                        </span>
+                        {isAnonymous && (
+                          <span className="text-[10px] bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 px-1.5 py-0.5 rounded-full font-medium">
+                            Anônimo
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          await signOut();
+                          setIsMobileMenuOpen(false);
+                          navigate("/");
+                        }}
+                        className="text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+                      >
+                        <LogOut className="h-4 w-4 mr-1" />
+                        Sair
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" className="block" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button
+                        variant="outline"
+                        className="w-full border-gray-200 dark:border-white/20 text-gray-700 dark:text-white hover:bg-green-50 dark:hover:bg-white/10 font-semibold"
+                      >
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Entrar
+                      </Button>
+                    </Link>
+                    <Link to="/register" className="block" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button
+                        className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold"
+                      >
+                        Criar Conta
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>

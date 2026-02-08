@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,15 @@ const Register = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signUpWithEmail, signInWithGoogle } = useAuth();
+  const { user, isAnonymous, loading: authLoading, signUpWithEmail, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in (non-anonymous)
+  useEffect(() => {
+    if (!authLoading && user && !isAnonymous) {
+      navigate("/chat", { replace: true });
+    }
+  }, [user, isAnonymous, authLoading, navigate]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();

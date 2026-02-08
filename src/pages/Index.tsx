@@ -3,7 +3,6 @@ import Hero from "@/components/landing/Hero";
 import Features from "@/components/landing/Features";
 import ChatMockup from "@/components/landing/ChatMockup";
 import Security from "@/components/landing/Security";
-import CTA from "@/components/landing/CTA";
 import Footer from "@/components/landing/Footer";
 
 const Index = () => {
