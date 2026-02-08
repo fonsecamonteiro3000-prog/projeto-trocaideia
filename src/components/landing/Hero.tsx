@@ -4,9 +4,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Hero = () => {
-  const { signInAnonymously, user, isAnonymous } = useAuth();
+  const { signInAnonymously, user, isAnonymous, loading } = useAuth();
   const navigate = useNavigate();
 
+  // isAnonymous is initialized synchronously from localStorage in AuthContext,
+  // so this is true from the very first render if they have a saved anonymous session
   const isLoggedIn = !!user || isAnonymous;
 
   const handleAnonymous = () => {
@@ -109,7 +111,7 @@ const Hero = () => {
           </div>
 
           {/* Login link */}
-          {!isLoggedIn && (
+          {!isLoggedIn && !loading && (
             <div className="animate-fade-up-delay-3 flex justify-center mb-14">
               <Link
                 to="/login"

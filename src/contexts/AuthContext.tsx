@@ -43,73 +43,119 @@ function generateAnonymousName(): string {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Initialize state from localStorage immediately (synchronous)
+  // to avoid flash of unauthenticated content
+  const savedAnon = localStorage.getItem("trocaideia_anonymous");
+  const parsedAnon = (() => {
+    if (savedAnon) {
+      try { return JSON.parse(savedAnon); } catch { return null; }
+    }
+    return null;
+  })();
+
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [anonymousId, setAnonymousId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<UserProfile>({
-    displayName: "",
-    isAnonymous: false,
-  });
+  const [isAnonymous, setIsAnonymous] = useState(!!parsedAnon);
+  const [anonymousId, setAnonymousId] = useState<string | null>(parsedAnon?.id ?? null);
+  const [profile, setProfile] = useState<UserProfile>(
+    parsedAnon
+      ? {
+          displayName: parsedAnon.displayName || "",
+          gender: parsedAnon.gender,
+          country: parsedAnon.country || "BR",
+          isAnonymous: true,
+        }
+      : {
+          displayName: "",
+          isAnonymous: false,
+        }
+  );
 
   useEffect(() => {
-    // First, check Supabase auth (takes priority over anonymous)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        // Authenticated user — clear any anonymous session
-        setIsAnonymous(false);
-        localStorage.removeItem("trocaideia_anonymous");
-        setProfile({
-          displayName:
-            session.user.user_metadata?.full_name ||
-            session.user.email?.split("@")[0] ||
-            "Usuário",
-          avatarUrl: session.user.user_metadata?.avatar_url,
-          isAnonymous: false,
-        });
-      } else {
-        // No Supabase session — check for anonymous session
-        const savedAnon = localStorage.getItem("trocaideia_anonymous");
-        if (savedAnon) {
-          try {
-            const parsed = JSON.parse(savedAnon);
-            setIsAnonymous(true);
-            setAnonymousId(parsed.id);
-            setProfile({
-              displayName: parsed.displayName,
-              gender: parsed.gender,
-              country: parsed.country || "BR",
-              isAnonymous: true,
-            });
-          } catch {
-            localStorage.removeItem("trocaideia_anonymous");
-          }
+    // Flag to prevent onAuthStateChange from setting loading=false
+    // before getSession() has completed (race condition fix)
+    const initialLoadDone = { current: false };
+
+    // Helper: load anonymous session from localStorage
+    const loadAnonymousSession = () => {
+      const savedAnon = localStorage.getItem("trocaideia_anonymous");
+      if (savedAnon) {
+        try {
+          const parsed = JSON.parse(savedAnon);
+          setIsAnonymous(true);
+          setAnonymousId(parsed.id);
+          setProfile({
+            displayName: parsed.displayName,
+            gender: parsed.gender,
+            country: parsed.country || "BR",
+            isAnonymous: true,
+          });
+          return true;
+        } catch {
+          localStorage.removeItem("trocaideia_anonymous");
         }
+      }
+      return false;
+    };
+
+    // Helper: set authenticated user state
+    const setAuthenticatedUser = (session: Session) => {
+      setSession(session);
+      setUser(session.user);
+      setIsAnonymous(false);
+      setAnonymousId(null);
+      localStorage.removeItem("trocaideia_anonymous");
+      setProfile({
+        displayName:
+          session.user.user_metadata?.full_name ||
+          session.user.email?.split("@")[0] ||
+          "Usuário",
+        avatarUrl: session.user.user_metadata?.avatar_url,
+        isAnonymous: false,
+      });
+    };
+
+    // 1. Get initial session from Supabase (this is the source of truth)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      initialLoadDone.current = true;
+
+      if (session?.user) {
+        setAuthenticatedUser(session);
+      } else {
+        setSession(null);
+        setUser(null);
+        // No Supabase session — check for anonymous session in localStorage
+        loadAnonymousSession();
       }
       setLoading(false);
     });
 
-    // Escuta mudanças de autenticação
+    // 2. Listen for SUBSEQUENT auth changes (sign in, sign out, token refresh)
+    //    We skip INITIAL_SESSION to avoid the race condition with getSession()
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Skip the initial session event — we handle it via getSession() above
+      if (event === "INITIAL_SESSION") return;
+
+      // For all other events, only process after initial load is done
+      // to prevent race conditions
+      if (!initialLoadDone.current) return;
+
       if (session?.user) {
-        setIsAnonymous(false);
-        localStorage.removeItem("trocaideia_anonymous");
-        setProfile((prev) => ({
-          ...prev,
-          displayName:
-            session.user.user_metadata?.full_name ||
-            session.user.email?.split("@")[0] ||
-            "Usuário",
-          avatarUrl: session.user.user_metadata?.avatar_url,
-          isAnonymous: false,
-        }));
+        setAuthenticatedUser(session);
+      } else {
+        // User signed out
+        setSession(null);
+        setUser(null);
+        // Don't auto-load anonymous here — they explicitly signed out
+        if (event === "SIGNED_OUT") {
+          setIsAnonymous(false);
+          setAnonymousId(null);
+          setProfile({ displayName: "", isAnonymous: false });
+          localStorage.removeItem("trocaideia_anonymous");
+        }
       }
       setLoading(false);
     });
@@ -169,15 +215,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    if (isAnonymous) {
-      setIsAnonymous(false);
-      setAnonymousId(null);
-      setProfile({ displayName: "", isAnonymous: false });
-      localStorage.removeItem("trocaideia_anonymous");
-      return;
+    // Clear all auth state
+    setIsAnonymous(false);
+    setAnonymousId(null);
+    setUser(null);
+    setSession(null);
+    setProfile({ displayName: "", isAnonymous: false });
+    localStorage.removeItem("trocaideia_anonymous");
+
+    // Also sign out from Supabase (if authenticated)
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore errors — we've already cleared local state
     }
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
   };
 
   const updateProfile = (updates: Partial<UserProfile>) => {

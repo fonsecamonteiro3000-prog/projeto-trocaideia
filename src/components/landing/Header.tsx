@@ -14,6 +14,14 @@ const Header = () => {
 
   const isLoggedIn = !!user || isAnonymous;
 
+  // Show logged-in UI if:
+  // - We already know user is logged in (even if still loading Supabase session)
+  // - OR loading is done and user is authenticated
+  // Show login buttons ONLY if loading is done and NOT logged in
+  const showLoggedIn = isLoggedIn;
+  const showLoginButtons = !loading && !isLoggedIn;
+  const showSkeleton = loading && !isLoggedIn;
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -59,7 +67,13 @@ const Header = () => {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
-            {!loading && isLoggedIn ? (
+            {showSkeleton ? (
+              /* Skeleton while loading auth state */
+              <div className="flex items-center gap-3">
+                <div className="w-24 h-10 rounded-xl bg-gray-200 dark:bg-white/10 animate-pulse" />
+                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-white/10 animate-pulse" />
+              </div>
+            ) : showLoggedIn ? (
               <>
                 <Link to="/chat">
                   <Button
@@ -152,7 +166,11 @@ const Header = () => {
                 </a>
               ))}
               <div className="px-4 pt-4 space-y-2">
-                {!loading && isLoggedIn ? (
+                {showSkeleton ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="w-full h-10 rounded-lg bg-gray-200 dark:bg-white/10 animate-pulse" />
+                  </div>
+                ) : showLoggedIn ? (
                   <>
                     <Link to="/chat" className="block" onClick={() => setIsMobileMenuOpen(false)}>
                       <Button
