@@ -63,6 +63,8 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   const dataChannel = useRef<RTCDataChannel | null>(null);
   const signalingChannel = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lobbyChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lobbySeekingInterval = useRef<NodeJS.Timeout | null>(null);
   const currentRoomId = useRef<string | null>(null);
   const isInitiator = useRef(false);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -73,6 +75,7 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
   const autoRequeue = useRef(false);
   const requeueTimeout = useRef<NodeJS.Timeout | null>(null);
   const findMatchRef = useRef<(() => Promise<void>) | null>(null);
+  const matchedFlag = useRef(false);
 
   // Online counter simulation
   useEffect(() => {
@@ -114,6 +117,14 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
       supabase.removeChannel(signalingChannel.current);
       signalingChannel.current = null;
     }
+    if (lobbyChannelRef.current) {
+      supabase.removeChannel(lobbyChannelRef.current);
+      lobbyChannelRef.current = null;
+    }
+    if (lobbySeekingInterval.current) {
+      clearInterval(lobbySeekingInterval.current);
+      lobbySeekingInterval.current = null;
+    }
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
       searchTimeout.current = null;
@@ -131,6 +142,7 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
       requeueTimeout.current = null;
     }
     pendingOffer.current = null;
+    matchedFlag.current = false;
     setRemoteStream(null);
     currentRoomId.current = null;
     isInitiator.current = false;
@@ -402,7 +414,7 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
     [userId, addMessage, cleanupPeerConnection]
   );
 
-  // Find a match
+  // Find a match using Supabase Realtime Broadcast (no database queue needed)
   const findMatch = useCallback(async () => {
     if (!localStreamRef.current) {
       setError("Ligue a câmera primeiro!");
@@ -413,153 +425,179 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
     setMessages([]);
     setStatus("searching");
     autoRequeue.current = true;
+    matchedFlag.current = false;
     addMessage("Procurando alguém...", "system");
 
-    try {
-      // Clean up old queue entries for this user first
-      await supabase
-        .from("chat_queue")
-        .delete()
-        .eq("user_id", userId);
+    // Helper to start the WebRTC connection as initiator
+    const startAsInitiator = async (roomId: string) => {
+      isInitiator.current = true;
+      currentRoomId.current = roomId;
+      setupSignaling(roomId);
+      const pc = createPeerConnection(roomId);
 
-      // Also clean up stale entries older than 2 minutes
-      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-      await supabase
-        .from("chat_queue")
-        .delete()
-        .eq("status", "waiting")
-        .lt("created_at", twoMinutesAgo);
+      setStatus("connecting");
+      addMessage("Conectando...", "system");
 
-      // Register in queue
-      const { data: queueEntry, error: insertError } = await supabase
-        .from("chat_queue")
-        .insert({ user_id: userId, status: "waiting" })
-        .select()
-        .single();
+      // Create offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      pendingOffer.current = offer;
 
-      if (insertError) {
-        console.error("Queue error:", insertError);
-        // Fallback: create direct room
-        await createDirectRoom();
-        return;
+      // Retry sending the offer every 2 seconds until partner responds
+      offerRetryInterval.current = setInterval(() => {
+        if (signalingChannel.current && pendingOffer.current) {
+          console.log("Retrying offer...");
+          signalingChannel.current.send({
+            type: "broadcast",
+            event: "offer",
+            payload: {
+              sdp: pendingOffer.current,
+              userId,
+            },
+          });
+        }
+      }, 2000);
+
+      // Initial offer after short delay
+      setTimeout(() => {
+        if (signalingChannel.current && pendingOffer.current) {
+          signalingChannel.current.send({
+            type: "broadcast",
+            event: "offer",
+            payload: {
+              sdp: pendingOffer.current,
+              userId,
+            },
+          });
+        }
+      }, 1000);
+    };
+
+    // Helper to start as responder
+    const startAsResponder = (roomId: string) => {
+      isInitiator.current = false;
+      currentRoomId.current = roomId;
+      setupSignaling(roomId);
+      createPeerConnection(roomId);
+
+      setStatus("connecting");
+      addMessage("Conectando...", "system");
+
+      // Notify initiator that we're ready
+      setTimeout(() => {
+        if (signalingChannel.current) {
+          signalingChannel.current.send({
+            type: "broadcast",
+            event: "ready",
+            payload: { userId },
+          });
+        }
+      }, 500);
+    };
+
+    // Clean up lobby helper
+    const cleanupLobby = () => {
+      if (lobbySeekingInterval.current) {
+        clearInterval(lobbySeekingInterval.current);
+        lobbySeekingInterval.current = null;
       }
+      if (lobbyChannelRef.current) {
+        supabase.removeChannel(lobbyChannelRef.current);
+        lobbyChannelRef.current = null;
+      }
+    };
 
-      // Look for a partner
-      const { data: partner } = await supabase
-        .from("chat_queue")
-        .select("*")
-        .neq("user_id", userId)
-        .eq("status", "waiting")
-        .neq("id", queueEntry.id)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .single();
+    try {
+      // Use a unique channel name with a timestamp to avoid conflicts with stale channels
+      const lobbyChannel = supabase.channel("matchmaking-lobby", {
+        config: { broadcast: { self: false } },
+      });
+      lobbyChannelRef.current = lobbyChannel;
 
-      if (partner) {
-        // We found someone! We are the initiator
-        isInitiator.current = true;
-        const roomId = crypto.randomUUID();
-        currentRoomId.current = roomId;
+      lobbyChannel
+        .on("broadcast", { event: "seeking" }, async ({ payload }) => {
+          if (matchedFlag.current || !payload || payload.userId === userId) return;
 
-        // Update both queue entries
-        await supabase
-          .from("chat_queue")
-          .update({ status: "matched", room_id: roomId })
-          .in("id", [queueEntry.id, partner.id]);
+          console.log("Found someone seeking:", payload.userId);
 
-        // Set up signaling and peer connection
-        setupSignaling(roomId);
-        const pc = createPeerConnection(roomId);
+          // Deterministic initiator: the user with the smaller ID initiates
+          const iAmInitiator = userId! < payload.userId;
 
-        setStatus("connecting");
-        addMessage("Conectando...", "system");
+          if (iAmInitiator) {
+            // I'm the initiator — propose a match
+            matchedFlag.current = true;
+            const roomId = crypto.randomUUID();
 
-        // Create offer and store it — will send when partner is "ready"
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        pendingOffer.current = offer;
+            console.log("I'm initiator, proposing match with room:", roomId);
 
-        // Retry sending the offer every 2 seconds in case the partner
-        // subscribed before the "ready" event was set up
-        offerRetryInterval.current = setInterval(() => {
-          if (signalingChannel.current && pendingOffer.current) {
-            console.log("Retrying offer...");
-            signalingChannel.current.send({
+            // Send match proposal to the other user
+            lobbyChannel.send({
               type: "broadcast",
-              event: "offer",
+              event: "match-proposal",
               payload: {
-                sdp: pendingOffer.current,
-                userId,
+                roomId,
+                initiator: userId,
+                responder: payload.userId,
               },
             });
-          }
-        }, 2000);
 
-        // Also send offer after a short delay as initial attempt
-        setTimeout(() => {
-          if (signalingChannel.current && pendingOffer.current) {
-            signalingChannel.current.send({
+            // Clean up lobby
+            cleanupLobby();
+
+            // Start WebRTC as initiator
+            await startAsInitiator(roomId);
+          }
+          // If I'm not the initiator, I wait for the match-proposal message
+        })
+        .on("broadcast", { event: "match-proposal" }, async ({ payload }) => {
+          if (matchedFlag.current || !payload) return;
+
+          // Only accept if I'm the intended responder
+          if (payload.responder !== userId) return;
+
+          console.log("Received match proposal for room:", payload.roomId);
+          matchedFlag.current = true;
+
+          // Clean up lobby
+          cleanupLobby();
+
+          // Start WebRTC as responder
+          startAsResponder(payload.roomId);
+        })
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            console.log("Joined matchmaking lobby, broadcasting seeking...");
+
+            // Immediately broadcast that we're seeking
+            lobbyChannel.send({
               type: "broadcast",
-              event: "offer",
-              payload: {
-                sdp: pendingOffer.current,
-                userId,
-              },
+              event: "seeking",
+              payload: { userId, timestamp: Date.now() },
             });
-          }
-        }, 1000);
-      } else {
-        // Wait to be matched (polling)
-        pollInterval.current = setInterval(async () => {
-          const { data: updated } = await supabase
-            .from("chat_queue")
-            .select("*")
-            .eq("id", queueEntry.id)
-            .single();
 
-          if (updated?.status === "matched" && updated?.room_id) {
-            clearInterval(pollInterval.current!);
-            pollInterval.current = null;
-
-            isInitiator.current = false;
-            currentRoomId.current = updated.room_id;
-
-            // Set up signaling and peer connection (as responder)
-            setupSignaling(updated.room_id);
-            createPeerConnection(updated.room_id);
-
-            setStatus("connecting");
-            addMessage("Conectando...", "system");
-
-            // Notify the initiator that we are ready to receive the offer
-            setTimeout(() => {
-              if (signalingChannel.current) {
-                signalingChannel.current.send({
+            // Re-broadcast every 2 seconds so new joiners can find us
+            lobbySeekingInterval.current = setInterval(() => {
+              if (!matchedFlag.current) {
+                lobbyChannel.send({
                   type: "broadcast",
-                  event: "ready",
-                  payload: { userId },
+                  event: "seeking",
+                  payload: { userId, timestamp: Date.now() },
                 });
               }
-            }, 500);
+            }, 2000);
           }
-        }, 1500);
+        });
 
-        // Timeout after 30s — retry automatically
-        searchTimeout.current = setTimeout(async () => {
-          if (pollInterval.current) {
-            clearInterval(pollInterval.current);
-            pollInterval.current = null;
-          }
-          // Clean up queue
-          await supabase.from("chat_queue").delete().eq("id", queueEntry.id);
-          
+      // Timeout after 60 seconds — clean up and retry
+      searchTimeout.current = setTimeout(() => {
+        if (!matchedFlag.current) {
+          cleanupLobby();
           addMessage("Ninguém encontrado. Tentando de novo...", "system");
-          // Re-enter the queue
           requeueTimeout.current = setTimeout(() => {
             findMatchRef.current?.();
           }, 2000);
-        }, 30000);
-      }
+        }
+      }, 60000);
     } catch (err) {
       console.error("Error finding match:", err);
       setStatus("disconnected");
@@ -571,21 +609,6 @@ export function useWebRTC(userId: string | undefined): UseWebRTCReturn {
   useEffect(() => {
     findMatchRef.current = findMatch;
   }, [findMatch]);
-
-  // Fallback: create a demo room for testing
-  const createDirectRoom = useCallback(async () => {
-    const roomId = crypto.randomUUID();
-    currentRoomId.current = roomId;
-    isInitiator.current = true;
-
-    setupSignaling(roomId);
-    createPeerConnection(roomId);
-
-    setStatus("searching");
-    addMessage("Aguardando alguém entrar...", "system");
-
-    // Keep searching state - the signaling will handle connection when someone joins
-  }, [setupSignaling, createPeerConnection, addMessage]);
 
   // Disconnect from current chat (manual stop — does NOT auto-requeue)
   const disconnect = useCallback(() => {
